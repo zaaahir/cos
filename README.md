@@ -277,6 +277,230 @@ We show hierarchy charts for each part of the operating system, followed by a ta
   </tr>
 </table>
 
+### Filesystem Layer
+
+<img width="361" alt="Screenshot 2024-08-13 at 19 36 29" src="https://github.com/user-attachments/assets/ee8300e7-f0a8-44cf-b2f4-0c8023fdfa4e">
+
+<table>
+  <tr>
+   <td colspan="2" ><strong>Filesystem Layer</strong> 
+   </td>
+  </tr>
+  <tr>
+   <td><strong>Module</strong> 
+   </td>
+   <td><strong>Function</strong> 
+   </td>
+  </tr>
+  <tr>
+   <td><strong>Virtual Filesystem Manager</strong> 
+   </td>
+   <td><strong>Acts as the main interface for handling files. Manages a tree structure of files and redirects file handling operations to the relevant filesystem driver.</strong> 
+   </td>
+  </tr>
+  <tr>
+   <td>File tree 
+   </td>
+   <td>The file tree consists of directories and files that are arranged using nodes. Each node can have child nodes and are dynamically allocated when a directory or file is requested. 
+   </td>
+  </tr>
+  <tr>
+   <td>Filesystem driver interface 
+   </td>
+   <td>Provides a standard interface for opening, reading, writing, and closing files. Each function calls the function for the underlying driver. This will be implemented using virtual functions and inheritance. 
+   </td>
+  </tr>
+  <tr>
+   <td><strong>TAR driver</strong> 
+   </td>
+   <td><strong>Reads Unix Standard TAR files and mounts the initial ramdisk as a concrete filesystem.</strong> 
+   </td>
+  </tr>
+  <tr>
+   <td>TAR header parsing 
+   </td>
+   <td>TAR headers are 512-byte aligned, and these headers contain various metadata about each file in the TAR archive. These headers are parsed and stored so that the contents of files can be accessed. 
+   </td>
+  </tr>
+  <tr>
+   <td>VFS node translation 
+   </td>
+   <td>The driver is responsible for converting the flat, sequential storage of files into a node-based tree of files and directories so that the Virtual Filesystem can interpret them. This is done dynamically as the Virtual Filesystem calls for file operations. 
+   </td>
+  </tr>
+</table>
+
+### Networking layer
+
+<img width="421" alt="Screenshot 2024-08-13 at 19 38 45" src="https://github.com/user-attachments/assets/7dd50385-0955-4662-86a7-80b5e0365eb1">
+
+<table>
+  <tr>
+   <td colspan="2" ><strong>Networking Layer</strong> 
+   </td>
+  </tr>
+  <tr>
+   <td><strong>Module</strong> 
+   </td>
+   <td><strong>Function</strong> 
+   </td>
+  </tr>
+  <tr>
+   <td><strong>Network driver</strong> 
+   </td>
+   <td><strong>Communicates with a network card to send and receive data over a network.</strong> 
+   </td>
+  </tr>
+  <tr>
+   <td>Configuration 
+   </td>
+   <td>Configures the network driver to send and receive Ethernet II frames. This involves configuring the PCI device and sending commands through I/O ports to enable the device.  
+   </td>
+  </tr>
+  <tr>
+   <td>Receive Ethernet frames 
+   </td>
+   <td>Allocates a circular buffer in physical memory to receive Ethernet frames. Informs the network card and maps it into the virtual address space. It also enables interrupts to receive on the device. 
+   </td>
+  </tr>
+  <tr>
+   <td>Send Ethernet frames 
+   </td>
+   <td>Allocates a circular buffer in physical memory to send Ethernet frames. Informs the network card and maps it into the virtual address space. 
+   </td>
+  </tr>
+  <tr>
+   <td><strong>Address Resolution Protocol</strong> 
+   </td>
+   <td><strong>Implements the Address Resolution Protocol for translation Internet Protocol version 4 addresses to MAC addresses.</strong> 
+   </td>
+  </tr>
+  <tr>
+   <td>Request address resolution 
+   </td>
+   <td>Sends an ARP request and waits to receive a response. Processes the response and caches MAC addresses that have already been resolved in a hash map. 
+   </td>
+  </tr>
+  <tr>
+   <td>Respond to requests 
+   </td>
+   <td>If the network card’s IP address is equal to the request’s resolution address, respond with an ARP response containing the network card’s MAC address. 
+   </td>
+  </tr>
+  <tr>
+   <td><strong>Internet Protocol v4</strong> 
+   </td>
+   <td><strong>Receive and send Internet Protocol v4 packets, forwarding them to specific IPv4 protocol handlers. This is done using inheritance, which registers a protocol handler in the main IPv4 class.</strong> 
+   </td>
+  </tr>
+</table>
+
+### Internet Protocol v4
+
+<img width="385" alt="Screenshot 2024-08-13 at 19 39 10" src="https://github.com/user-attachments/assets/f009305e-a4a4-47ef-b5b1-c7f3a2189397">
+
+<table>
+  <tr>
+   <td colspan="2" ><strong>Internet Protocol v4</strong> 
+   </td>
+  </tr>
+  <tr>
+   <td><strong>Module</strong> 
+   </td>
+   <td><strong>Function</strong> 
+   </td>
+  </tr>
+  <tr>
+   <td><strong>User Datagram Protocol</strong> 
+   </td>
+   <td><strong>Implements the User Datagram Protocol using sockets.</strong> 
+   </td>
+  </tr>
+  <tr>
+   <td>Port management 
+   </td>
+   <td>Uses a class to represent a port that can send and receive data by calling the relevant UDP functions. 
+   </td>
+  </tr>
+  <tr>
+   <td>Handler 
+   </td>
+   <td>Classes can use inheritance to call a function upon receiving UDP messages on a port. 
+   </td>
+  </tr>
+  <tr>
+   <td><strong>Transmission Control Protocol</strong> 
+   </td>
+   <td><strong>Implements the Transmission Control Protocol using sockets.</strong> 
+   </td>
+  </tr>
+  <tr>
+   <td>Port management 
+   </td>
+   <td>Uses a class to represent a port that can send and receive data by calling the relevant TCP functions. 
+   </td>
+  </tr>
+  <tr>
+   <td>Connection establishment 
+   </td>
+   <td>Can passive open or connect to a server, establishing a connection with a two-way handshake, sending SYN packets, and managing state. 
+   </td>
+  </tr>
+  <tr>
+   <td>Received packet reordering 
+   </td>
+   <td>Uses a buffer to hold received packets and reorder them by synchronisation number. Sends to the application layer when there is a sequential number of packets, and the acknowledgement number is updated. 
+   </td>
+  </tr>
+  <tr>
+   <td>Retransmission 
+   </td>
+   <td>Uses a buffer to hold transmitted packets and starts a timer to retransmit them if the receiver does not acknowledge them. 
+   </td>
+  </tr>
+</table>
+
+### Userspace
+
+<img width="302" alt="Screenshot 2024-08-13 at 19 40 38" src="https://github.com/user-attachments/assets/44e92cd0-54cf-4d7f-a9e9-ba026f3dac30">
+
+<table>
+  <tr>
+   <td colspan="2" ><strong>User-space</strong> 
+   </td>
+  </tr>
+  <tr>
+   <td><strong>Module</strong> 
+   </td>
+   <td><strong>Function</strong> 
+   </td>
+  </tr>
+  <tr>
+   <td><strong>ELF Loader</strong> 
+   </td>
+   <td><strong>Loads an ELF file to be executed as a task.</strong> 
+   </td>
+  </tr>
+  <tr>
+   <td>Loads in segments 
+   </td>
+   <td>Loads in program executable segments into a task’s address space. 
+   </td>
+  </tr>
+  <tr>
+   <td><strong>System Calls</strong> 
+   </td>
+   <td><strong>Implements a system calls interface for user-space processes to request services from the operating system.</strong> 
+   </td>
+  </tr>
+  <tr>
+   <td>Syscall handler 
+   </td>
+   <td>Executes when <code>syscall</code> is called. Takes arguments from registers loaded by the user-space program. Calls various kernel functions to execute syscall 
+   </td>
+  </tr>
+</table>
+
 ## Resources
 
 1 - OSDev Wiki (https://osdev.wiki/wiki/Expanded_Main_Page)
