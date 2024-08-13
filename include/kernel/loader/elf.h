@@ -59,6 +59,70 @@ enum Elf_Ident {
     EI_ABIVER   = 8, 
     EI_PAD      = 9  
 };
+
+enum Elf_Type {
+    ET_NONE     = 0,
+    ET_REL      = 1,
+    ET_EXEC     = 2,
+    ET_DYN      = 3,
+    ET_CORE     = 4,
+    ET_LOPROC   = 0xff00,
+    ET_HIPROC   = 0xffff
+};
+
+enum Elf_Machine {
+    EM_NONE         = 0,
+    EM_M32          = 1,
+    EM_SPARC        = 2,
+    EM_386          = 3,
+    EM_68K          = 4,
+    EM_88K          = 5,
+    EM_860          = 7,
+    EM_MIPS         = 8,
+    EM_MIPS_RS4_BE  = 10,
+    EM_AMD64        = 62
+};
+
+enum Elf_Version {
+    EV_NONE     = 0,
+    EV_CURRENT  = 1
+};
+
+typedef struct
+{
+    Elf64_Word sh_name;
+    Elf64_Word sh_type;
+    Elf64_Xword sh_flags;
+    Elf64_Addr sh_addr;
+    Elf64_Off sh_offset;
+    Elf64_Xword sh_size;
+    Elf64_Word sh_link;
+    Elf64_Word sh_info;
+    Elf64_Xword sh_addralign;
+    Elf64_Xword sh_entsize;
+} Elf64_Shdr;
+
+enum sh_type
+{
+    SHT_NULL = 0,
+    SHT_PROGBITS = 1,
+    SHT_SYMTAB = 2,
+    SHT_STRTAB = 3,
+    SHT_RELA = 4,
+    SHT_HASH = 5,
+    SHT_DYNAMIC = 6,
+    SHT_NOTE = 7,
+    SHT_NOBITS = 8,
+    SHT_REL = 9,
+    SHT_SHLIB = 10,
+    SHT_DYNSYM = 11
+};
+
+namespace Loader
+{
+    bool check_elf_header_ident(Elf64_Ehdr *header);
+    bool check_elf_header_support(Elf64_Ehdr *header);
+    void prepare_elf(char* path, Task::Task* task);
 } 
 
 #endif
