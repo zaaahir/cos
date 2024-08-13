@@ -96,9 +96,21 @@ A cross-compiler is a compiler where the host machine (machine that the binaries
 
 ### Hierarchy Charts
 
+We show hierarchy charts for each part of the operating system, followed by a table describing the function of each module.
+
+### Kernel
+
+<img width="447" alt="Screenshot 2024-08-13 at 14 39 05" src="https://github.com/user-attachments/assets/8eccf38c-bcb2-4405-a1cf-d1a42cd6d523" style="display: block; margin-left: auto; margin-right: auto;">
+
+
+
 <table>
   <tr>
-    <td colspan="2" style="text-align: center; vertical-align: middle;"> <strong>Kernel</strong> </td>
+    <td colspan="2">
+  <div style="display: flex; justify-content: center; align-items: center; height: 100%;">
+    <strong>Kernel</strong>
+  </div>
+</td>
    </td>
   </tr>
   <tr>
