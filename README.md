@@ -504,3 +504,4 @@ We show hierarchy charts for each part of the operating system, followed by a ta
 ## Resources
 
 1 - OSDev Wiki (https://osdev.wiki/wiki/Expanded_Main_Page)
+2 - Operating System Concepts, 10th edition (Abraham Silberschatz, Greg Gagne, and Peter Baer Galvin)
