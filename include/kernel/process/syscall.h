@@ -1,0 +1,21 @@
+#ifndef SYSCALL_H
+#define SYSCALL_H
+#include "types.h"
+
+#define SYSCALL_DPRINTF 1
+#define SYSCALL_VMMAP 2
+#define SYSCALL_VMUNMAP 3
+#define SYSCALL_FOPEN 4
+#define SYSCALL_FCLOSE 5
+#define SYSCALL_FREAD 6
+#define SYSCALL_FWRITE 7
+#define SYSCALL_EREGISTER 8
+#define SYSCALL_ELISTEN 9
+#define SYSCALL_EDEREGISTER 10
+#define SYSCALL_EREAD 11
+#define SYSCALL_SLEEP_FOR 12
+#define SYSCALL_GETTID 13
+
+// placeholder
+
+#endif
