@@ -73,5 +73,63 @@ namespace Events {
         auto str = FixedLenStringHashContainer();
         strcpy(str.str, event);
         
+        auto eventSender = EventDispatcher::instance().m_eventSenderHashmap.find(str);
+        if (!(eventSender->first == str)) { return -1; }
+        auto ed = Task::TaskManager::instance().add_ed((void*)eventSender->last, param, tid);
+        eventSender->last->register_event_listener(ed, tid); 
+        return ed;
+    }
+
+    void EventDispatcher::dispatch_event(EventMessage event, EventDescriptorItem processed)
+    {
+        Task::TaskManager::instance().lock();
+        auto ped = Task::TaskManager::instance().get_ed(processed.processEventDescriptor, processed.tid);
+        ped->last.queue.append(event);
+        Task::TaskManager::instance().unlock();
+    }
+
+    void EventDispatcher::dispatch_event(EventMessage event, Common::DoublyLinkedList<EventDescriptorItem>* processeds)
+    {
+        for (auto it=processeds->first(); !it.is_end(); ++it)
+        {
+            dispatch_event(event, *it);
+        }
+    }
+
+    void EventDispatcher::block_event_listen(uint64_t tid, uint64_t ed)
+    {
+        Task::TaskManager::instance().lock();
+        auto ped = Task::TaskManager::instance().get_ed(ed, tid);
+        auto sender = (EventSender*)(ped->last.eventSender);
+        if (ped->last.queue.size() != 0) {
+            Task::TaskManager::instance().unlock();
+            return;
+        }
+        sender->block_event_listen(ed, tid);
+        Task::TaskManager::instance().unlock();
+        Task::TaskManager::instance().block_task();
+    }
+
+    uint64_t EventDispatcher::deregister_event_listener(uint64_t tid, uint64_t ed)
+    {
+        EventDispatcher::instance().remove_process_from_listener_lists(ed, tid);
+        EventDispatcher::instance().remove_process_from_wait_lists(ed, tid);
+        Task::TaskManager::instance().remove_ed(ed, tid);
+        return 1;
+    }
+
+    uint64_t EventDispatcher::read_from_event_queue(uint64_t tid, uint64_t ed)
+    {
+        Task::TaskManager::instance().lock();
+        auto ped = Task::TaskManager::instance().get_ed(ed, tid);
+        if (ped->last.queue.first().is_end())
+        { 
+            Task::TaskManager::instance().unlock();
+            return 0;
+        }
+        auto ret = *(ped->last.queue.first());
+        ped->last.queue.remove(ped->last.queue.first());
+        Task::TaskManager::instance().unlock();
+        return (uint64_t)ret.message;
     }
 }
