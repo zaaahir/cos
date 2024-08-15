@@ -226,3 +226,93 @@ namespace Memory {
         {
             free_physical_block(addressSpace.get_physical_address().get());
         }
+
+        VirtualAddressSpace& get_main_address_space()
+        {
+            return m_virtualAddressSpace;
+        }
+
+        void switch_to_address_space(VirtualAddressSpace& addressSpace)
+        {
+            __asm__ volatile ("movq %0, %%cr3" : : "r"(reinterpret_cast<uint64_t>(addressSpace.get_physical_address().get())));
+        }
+
+        static MemoryManager& instance()
+        {
+            static MemoryManager instance;
+            return instance;
+        }
+    private:
+        MemoryManager() :m_virtualAddressSpace(static_cast<uint64_t>(0)) {}
+    public:
+        MemoryManager(MemoryManager const&) = delete;
+        void operator=(MemoryManager const&) = delete;
+    private:
+        class PhysicalBitmap
+        {
+        public:
+            static constexpr uint8_t CHAR_BIT = 8;
+
+            void initialise(void* bitmap, uint64_t numberOfBits)
+            {
+                m_bitmap = static_cast<uint8_t*>(bitmap);
+                m_bitmapSize = numberOfBits / CHAR_BIT;
+                if (numberOfBits % CHAR_BIT) { m_bitmapSize++; }
+                
+                for (uint64_t i = 0; i < m_bitmapSize; i++)
+                {
+                    m_bitmap[i] = 0xFF;
+                }
+            }
+
+            void set(uint64_t bit)
+            {
+                if (bit >= m_bitmapSize * CHAR_BIT) { return; }
+                m_bitmap[bit / CHAR_BIT] |= (1 << (bit % CHAR_BIT));
+            }
+
+            void unset(uint64_t bit)
+            {
+                if (bit >= m_bitmapSize * CHAR_BIT) { return; }
+                m_bitmap[bit / CHAR_BIT] &= ~(1 << (bit % CHAR_BIT));
+            }
+
+            uint64_t first_unset()
+            {
+                for (uint64_t i = 0; i < m_bitmapSize; i++)
+                {
+                    if (m_bitmap[i] != 0xFF)
+                    {
+                        for (uint8_t j = 0; j < CHAR_BIT; j++)
+                        {
+                            if (!(m_bitmap[i] & (1<<j)))
+                            {
+                                return i * CHAR_BIT + j;
+                            }
+                        }
+                    }
+                }
+                // FIXME: We can't return -1 when ret type is unsigned
+                return -1;
+            }
+            PhysicalBitmap() {}
+        private:
+            uint8_t* m_bitmap = 0;
+            uint64_t m_bitmapSize = 0;
+        public:
+            PhysicalBitmap(PhysicalBitmap const&) = delete;
+            void operator=(PhysicalBitmap const&) = delete;
+        };
+        static constexpr uint64_t PHYSICAL_BLOCK_SIZE = 0x1000;
+        static constexpr uint64_t PHYSICAL_MEM_MAP_VIRTUAL_ADDRESS = 0xFFFFFF8000000000;
+        uint64_t m_physicalMemorySize;
+        PhysicalBitmap m_physicalBitmap;
+        VirtualAddressSpace m_virtualAddressSpace;
+        void flush_tlb_entry(VirtualAddress virtualAddress)
+        {
+            auto address = reinterpret_cast<uint64_t>(virtualAddress.get());
+            asm volatile("invlpg (%0)" ::"r" (address) : "memory");
+        }
+    };
+}
+#endif
