@@ -153,3 +153,76 @@ namespace Memory {
             return &m_entries[(reinterpret_cast<uint64_t>(virtualAddress.get()) >> 30) & 0x1FF];
         }
     } __attribute__((packed));
+
+    class PageDirectoryTable : public GenericTable
+    {
+    public:
+        void request_virtual_map(VirtualMemoryMapRequest request);
+        bool request_virtual_unmap(VirtualMemoryUnmapRequest request);
+        PhysicalAddress get_physical_address(VirtualAddress virtualAddress);
+    private:
+        GenericEntry* get_entry(VirtualAddress virtualAddress)
+        {
+            return &m_entries[(reinterpret_cast<uint64_t>(virtualAddress.get()) >> 21) & 0x1FF];
+        }
+    } __attribute__((packed));
+
+    class PageTable : public GenericTable
+    {
+    public:
+        void request_virtual_map(VirtualMemoryMapRequest request);
+        bool request_virtual_unmap(VirtualMemoryUnmapRequest request);
+        PhysicalAddress get_physical_address(VirtualAddress virtualAddress);
+    private:
+        GenericEntry* get_entry(VirtualAddress virtualAddress)
+        {
+            return &m_entries[(reinterpret_cast<uint64_t>(virtualAddress.get()) >> 12) & 0x1FF];
+        }
+    } __attribute__((packed));
+
+    class MemoryManager
+    {
+        friend class PML4Table;
+    public:
+        // Protect certain regions from being overwritten by allocator.
+        void protect_physical_regions(PhysicalAddress kernelEnd);
+        // Mark a region of memory as free so the physical allocator can use them
+        void init_physical_region(PhysicalAddress base, uint64_t size);
+        // Mark a region of memory as used so the physical allocator does not overwrite them.
+        void deinit_physical_region(PhysicalAddress base, uint64_t size);
+        // Set up new kernel page tables.
+        void remap_pages();
+        // Allocate a 4KiB physical page.
+        PhysicalAddress alloc_physical_block();
+        // Frees a 4KiB physical page.
+        void free_physical_block(PhysicalAddress block);
+        // Map a virtual page in an address space.
+        void request_virtual_map(VirtualMemoryMapRequest request, VirtualAddressSpace& addressSpace = instance().get_main_address_space());
+        // Unmap a virtual page in an address space.
+        void request_virtual_unmap(VirtualMemoryUnmapRequest request, VirtualAddressSpace& addressSpace = instance().get_main_address_space());
+        // Allocate a virtual 4KiB page.
+        void alloc_page(VirtualMemoryAllocationRequest request, VirtualAddressSpace& addressSpace = instance().get_main_address_space());
+        // Free an allocated virtual 4KiB page.
+        void free_page(VirtualMemoryFreeRequest request, VirtualAddressSpace& addressSpace = instance().get_main_address_space());
+        // Get physical address that a page-aligned virtual address is mapped to.
+        PhysicalAddress get_physical_address(VirtualAddress virtualAddress, VirtualAddressSpace& addressSpace = instance().get_main_address_space());
+
+        VirtualAddressSpace create_virtual_address_space()
+        {
+            auto physicalAddress = alloc_physical_block();
+            auto addressSpace = VirtualAddressSpace(physicalAddress);
+            memset(VirtualAddress(physicalAddress).get(), 0, sizeof(PML4Table));
+            for (uint64_t physicalAddress = 0; physicalAddress < 510 * PAGE_1GiB; physicalAddress += PAGE_1GiB)
+            {
+                auto request = VirtualMemoryMapRequest(PhysicalAddress(physicalAddress), VirtualAddress(PhysicalAddress(physicalAddress)));
+                request.allowWrite = true;
+                request.pageSize = PAGE_1GiB;
+                request_virtual_map(request, addressSpace);
+            }
+            return addressSpace;
+        }
+
+        void destroy_virtual_address_space(VirtualAddressSpace& addressSpace)
+        {
+            free_physical_block(addressSpace.get_physical_address().get());
+        }
