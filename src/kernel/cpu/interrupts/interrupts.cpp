@@ -75,3 +75,62 @@ namespace CPU {
         InterruptManager::instance().add_interrupt_handler(this, m_interruptNumber);
         m_isPresentInTable = true;
     }
+
+    void InterruptManager::internal_interrupt_handler(uint8_t interrupt)
+    {
+        switch (interrupt)
+        {
+            case 14:
+            printf("PAGE FAULT");
+            // If a page fault occurs, the page faulting address is stored in CR2.
+            // We get it and check if it is mapped in the main address space, if so map it in the current address space.
+            uint64_t pageFaultAddress;
+            asm volatile ("mov %%cr2, %0" : "=r" (pageFaultAddress));
+            printf(pageFaultAddress);
+            while(1);
+            uint64_t addressSpaceAddress;
+            asm volatile ("mov %%cr3, %0" : "=r" (addressSpaceAddress));
+            auto physicalAddress = Memory::MemoryManager::instance().get_physical_address(pageFaultAddress, Memory::MemoryManager::instance().get_main_address_space());
+            // Check that the physical address exists.
+            if (physicalAddress.get())
+            {
+                auto vaddrspace = Memory::VirtualAddressSpace(addressSpaceAddress);
+                Memory::MemoryManager::instance().request_virtual_map(Memory::VirtualMemoryMapRequest(physicalAddress, Memory::VirtualAddress(BYTE_ALIGN_DOWN(pageFaultAddress, Memory::PAGE_4KiB))), vaddrspace);
+            }
+            return;
+        }
+        if (interrupt >= MAX_EXCEPTIONS_IRQ)
+        {
+            if (m_interruptHandlerTable[interrupt])
+            {
+                m_interruptHandlerTable[interrupt]->irq_handler();
+            }
+            if (interrupt <= MAX_PIC_IRQ)
+            {
+                PIC::send_eoi(interrupt-MAX_EXCEPTIONS_IRQ);
+            }
+        }
+    }
+
+    void InterruptManager::handle_noerr_interrupt(uint8_t interrupt)
+    {
+        InterruptManager::instance().internal_interrupt_handler(interrupt);
+    }
+
+    void InterruptManager::handle_err_interrupt(uint8_t interrupt, uint8_t err)
+    {
+        InterruptManager::instance().internal_interrupt_handler(interrupt);
+    }
+
+    void InterruptManager::enable_interrupts()
+    {
+        // Standard remapping of PIC.
+        PIC::remap_and_init_to_offsets(0x20, 0x28);
+        asm volatile ("sti");
+    }
+
+    void InterruptManager::disable_interrupts()
+    {
+        asm volatile ("cli");
+    }
+}
