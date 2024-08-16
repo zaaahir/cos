@@ -81,3 +81,72 @@ namespace Memory {
                 if (entryEnd > m_physicalMemorySize) { m_physicalMemorySize = entryEnd; }
             }
         }
+
+        // Calculate size of physical memory bitmap.
+        auto numBits = m_physicalMemorySize / PHYSICAL_BLOCK_SIZE;
+        if (m_physicalMemorySize % PHYSICAL_BLOCK_SIZE) { numBits++; }
+
+        auto numBytes = numBits / PhysicalBitmap::CHAR_BIT;
+        if (numBytes % PhysicalBitmap::CHAR_BIT) { numBytes++; }
+        
+        // We place the bitmap at the end of physical memory.
+        m_physicalBitmap.initialise(VirtualAddress(PhysicalAddress(m_physicalMemorySize - numBytes)).get(), numBits);
+
+        auto memoryBitmapPageStart = BYTE_ALIGN_UP(m_physicalMemorySize - numBytes, PHYSICAL_BLOCK_SIZE);
+
+        for (auto entry = tag->entries;
+            reinterpret_cast<uint64_t>(entry) < reinterpret_cast<uint64_t>(tag) + tag->size;
+            entry = reinterpret_cast<multiboot_mmap_entry*>((reinterpret_cast<uint64_t>(entry) + tag->entry_size)))
+        {
+            if (entry->type == 1)
+            {
+                auto alignedAddress = BYTE_ALIGN_UP(entry->addr, PHYSICAL_BLOCK_SIZE);
+                init_physical_region(alignedAddress, entry->len);
+            }
+        }
+        deinit_physical_region(memoryBitmapPageStart, m_physicalMemorySize - memoryBitmapPageStart);
+        deinit_physical_region(PhysicalAddress(static_cast<uint64_t>(0)), reinterpret_cast<uint64_t>(kernelEnd.get()));
+        auto multibootStructure = Multiboot::MultibootManager::instance().get_structure();
+        deinit_physical_region(reinterpret_cast<uint64_t>(multibootStructure), multibootStructure->total_size);
+    }
+
+    void GenericEntry::set_access_flags(VirtualMemoryMapRequest request)
+    {
+        set_flag(Flag::PRESENT);
+        if (request.allowUserAccess)
+            set_flag(Flag::USER_ACCESS);
+        
+        if (request.allowWrite)
+            set_flag(Flag::WRITEABLE);
+        
+    }
+
+    void GenericEntry::prepare_table_for_entry(VirtualMemoryMapRequest request)
+    {
+        if (!get_flag(Flag::PRESENT) || get_flag(Flag::PAGE_SIZE))
+        {
+            PhysicalAddress newTable = MemoryManager::instance().alloc_physical_block();
+            memset(VirtualAddress(newTable).get(), 0, sizeof(GenericTable));
+            set_frame(newTable);
+            clear_flag(Flag::PAGE_SIZE);
+        }
+        set_access_flags(request);
+    }
+
+    void GenericEntry::prepare_page_for_entry(VirtualMemoryMapRequest request)
+    {
+        if (request.pageSize != PAGE_4KiB)
+            set_flag(Flag::PAGE_SIZE);
+        set_frame(request.physicalAddress);
+        set_access_flags(request);
+    }
+
+    void GenericEntry::free_table()
+    {
+        // If the PAGE_SIZE flag is set, then this is not a table but rather a page entry.
+        if (get_flag(Flag::PRESENT) && !get_flag(Flag::PAGE_SIZE))
+        {
+            MemoryManager::instance().free_physical_block(get_frame());
+            m_entry = 0;
+        }
+    }
