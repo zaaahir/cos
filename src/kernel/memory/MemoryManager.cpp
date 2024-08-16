@@ -150,3 +150,74 @@ namespace Memory {
             m_entry = 0;
         }
     }
+
+    void PML4Table::request_virtual_map(VirtualMemoryMapRequest request)
+    {
+        auto entry = get_entry(request.virtualAddress);
+        entry->prepare_table_for_entry(request);
+        auto pageDirectoryPointerTable = static_cast<PageDirectoryPointerTable*>(VirtualAddress(PhysicalAddress(entry->get_frame())).get());
+        pageDirectoryPointerTable->request_virtual_map(request);
+    }
+
+    void PageDirectoryPointerTable::request_virtual_map(VirtualMemoryMapRequest request)
+    {
+        auto entry = get_entry(request.virtualAddress);
+        if (request.pageSize == PAGE_1GiB)
+        {
+            if (!CHECK_ALIGN(reinterpret_cast<uint64_t>(request.physicalAddress.get()), PAGE_1GiB)
+            || !CHECK_ALIGN(reinterpret_cast<uint64_t>(request.virtualAddress.get()), PAGE_1GiB))
+            {
+                Kernel::panic("Virtual memory map request failed: Address is not 1GiB aligned.");
+            }
+            entry->free_table();
+            entry->prepare_page_for_entry(request);
+        }
+        else
+        {
+            entry->prepare_table_for_entry(request);
+            auto pageDirectory = static_cast<PageDirectoryTable*>(VirtualAddress(PhysicalAddress(entry->get_frame())).get());
+            pageDirectory->request_virtual_map(request);
+        }
+    }
+
+    void PageDirectoryTable::request_virtual_map(VirtualMemoryMapRequest request)
+    {
+        auto entry = get_entry(request.virtualAddress);
+        if (request.pageSize == PAGE_2MiB)
+        {
+            if (!CHECK_ALIGN(reinterpret_cast<uint64_t>(request.physicalAddress.get()), PAGE_2MiB)
+            || !CHECK_ALIGN(reinterpret_cast<uint64_t>(request.virtualAddress.get()), PAGE_2MiB))
+            {
+                Kernel::panic("Virtual memory map request failed: Address is not 2MiB aligned.");
+            }
+            entry->free_table();
+            entry->prepare_page_for_entry(request);
+        }
+        else
+        {
+            entry->prepare_table_for_entry(request);
+            auto pageTable = static_cast<PageTable*>(VirtualAddress(PhysicalAddress(entry->get_frame())).get());
+            pageTable->request_virtual_map(request);
+        }
+    }
+
+    void PageTable::request_virtual_map(VirtualMemoryMapRequest request)
+    {
+        auto entry = get_entry(request.virtualAddress);
+        if (!CHECK_ALIGN(reinterpret_cast<uint64_t>(request.physicalAddress.get()), PAGE_4KiB)
+            || !CHECK_ALIGN(reinterpret_cast<uint64_t>(request.virtualAddress.get()), PAGE_4KiB))
+            Kernel::panic("Virtual memory map request failed: Address is not 4KiB aligned.");
+        
+        entry->prepare_page_for_entry(request);
+    }
+
+    void MemoryManager::request_virtual_map(VirtualMemoryMapRequest request, VirtualAddressSpace& addressSpace)
+    {
+        static_cast<PML4Table*>(VirtualAddress(addressSpace.get_physical_address()).get())->request_virtual_map(request);
+        MemoryManager::instance().flush_tlb_entry(request.virtualAddress);
+    }
+
+    void MemoryManager::request_virtual_unmap(VirtualMemoryUnmapRequest request, VirtualAddressSpace& addressSpace)
+    {
+        static_cast<PML4Table*>(VirtualAddress(addressSpace.get_physical_address()).get())->request_virtual_unmap(request);
+    }
