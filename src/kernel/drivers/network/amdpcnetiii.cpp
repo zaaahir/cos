@@ -70,3 +70,97 @@ namespace Drivers
             m_transmitBufferDescriptorRingBase[i].TMD2 = 0;
             m_transmitBufferDescriptorRingBase[i].TMD3 = 0;
         }
+
+        for (uint64_t i = 0; i < RECEIVE_BUFFER_COUNT; i++)
+        {
+            m_receiveBufferDescriptorRingBase[i].RMD0 = reinterpret_cast<uint64_t>(Memory::VirtualAddress(&m_receiveBuffersBase[i*BUFFER_SIZE]).get_low_physical().get());
+            m_receiveBufferDescriptorRingBase[i].RMD1 = OWN_BUFFER | ONES | BUFFER_LEN;
+            m_receiveBufferDescriptorRingBase[i].RMD2 = 0;
+            m_receiveBufferDescriptorRingBase[i].RMD3 = 0;
+        }
+
+        auto initBlockPhysicalAddress = reinterpret_cast<uint64_t>(Memory::VirtualAddress(&m_initBlock).get_low_physical().get());
+
+        // Initialise with initialisation block.
+        IO::out_16(m_rapPort, CSR1);
+        IO::out_16(m_rdpPort, (initBlockPhysicalAddress & 0xFFFF));
+        IO::out_16(m_rapPort, CSR2);
+        IO::out_16(m_rdpPort, ((initBlockPhysicalAddress >> 16) & 0xFFFF));
+        IO::out_16(m_rapPort, CSR0);
+        IO::out_16(m_rdpPort, CSR0_IENA | CSR0_INIT);
+
+        IO::out_16(m_rapPort, CSR4);
+        uint32_t csr4Contents = IO::in_16(m_rdpPort);
+        IO::out_16(m_rapPort, CSR4);
+        IO::out_16(m_rdpPort, csr4Contents | 0xC00);
+
+        // Start receiving with interrupts enabled.
+        IO::out_16(m_rapPort, CSR0);
+        IO::out_16(m_rdpPort, CSR0_IENA | CSR0_STRT);
+    }
+
+    void AMDPCNetIIIDriver::irq_handler()
+    {
+        IO::out_16(m_rapPort, 0);
+        uint32_t code = IO::in_16(m_rdpPort);
+
+        if((code & 0x0400) == 0x0400) { receive_data(); }
+
+        IO::out_16(m_rapPort, 0);
+        IO::out_16(m_rdpPort, code);
+    }
+
+    void AMDPCNetIIIDriver::send_data(uint8_t* buf, uint64_t size)
+    {
+        IO::wait();
+        uint8_t descriptor = m_currentTransmitBufferDescriptor;
+        // Move to next transmit buffer.
+        m_currentTransmitBufferDescriptor = (m_currentTransmitBufferDescriptor + 1) % TRANSMIT_BUFFER_COUNT;
+        if (size > 1518) { printf("AMD PCNET ERROR: Trying to transmit frame of size greater than 1518"); }
+        memcpy(Memory::VirtualAddress(Memory::PhysicalAddress(m_transmitBufferDescriptorRingBase[descriptor].TMD0)).get(), buf, size);
+        m_transmitBufferDescriptorRingBase[descriptor].TMD1 = OWN_BUFFER | ONES | STP | ENP | ((uint16_t)((-size) & 0xFFF));
+        m_transmitBufferDescriptorRingBase[descriptor].TMD2 = 0;
+        m_transmitBufferDescriptorRingBase[descriptor].TMD3 = 0;
+        IO::out_16(m_rapPort, CSR0);
+        IO::out_16(m_rdpPort, CSR0_IENA | CSR0_TDMD);
+    }
+
+    void AMDPCNetIIIDriver::receive_data()
+    {
+        // Iterate through the circular buffer descriptors.
+        for (; (m_receiveBufferDescriptorRingBase[m_currentReceiveBufferDescriptor].RMD1 & OWN_BUFFER) == 0; m_currentReceiveBufferDescriptor = (m_currentReceiveBufferDescriptor+1)%RECEIVE_BUFFER_COUNT)
+        {
+            // Find the buffer that has been written to by the device.
+            if ((m_receiveBufferDescriptorRingBase[m_currentReceiveBufferDescriptor].RMD1 & (STP | ENP)) == (STP | ENP))
+            {
+                uint32_t size = m_receiveBufferDescriptorRingBase[m_currentReceiveBufferDescriptor].RMD1 & 0xFFF;
+                uint8_t* buf = (uint8_t*)m_receiveBufferDescriptorRingBase[m_currentReceiveBufferDescriptor].RMD0;
+                // The driver must remove the Ethernet frame check sequence, and discard any Ethernet frames which do not have the correct FCS.
+                if (size > 64) { size -= 4; }
+
+                auto eventMessage = Events::EventMessage();
+                auto networkDataReceived = new NetworkDataReceived();
+                networkDataReceived->buf = buf;
+                networkDataReceived->size = size;
+                eventMessage.message = (void*)networkDataReceived;
+                Events::EventDispatcher::instance().dispatch_event(eventMessage, &m_self->m_listenqueue);
+                Events::EventDispatcher::instance().wake_processes(&m_self->m_waitqueue);
+            }
+            m_receiveBufferDescriptorRingBase[m_currentReceiveBufferDescriptor].RMD1 = OWN_BUFFER | ONES | BUFFER_LEN;
+        }
+    }
+
+    void AMDPCNetIIIDriver::block_event_listen(uint64_t ped, uint64_t tid)
+    {
+        Events::EventDispatcher::instance().add_process_to_wait_event_list(ped, tid, &m_waitqueue);
+    }
+
+    void AMDPCNetIIIDriver::register_event_listener(uint64_t ped, uint64_t tid)
+    {
+        Events::EventDispatcher::instance().add_process_to_listener_event_list(ped, tid, &m_listenqueue);
+    }
+
+    uint64_t AMDPCNetIIIDriver::get_MAC_address() { return m_MACAddress; }
+    uint32_t AMDPCNetIIIDriver::get_IP_address() { return m_IPAddress; }
+    void AMDPCNetIIIDriver::set_IP_address(uint32_t IPAddress) { m_IPAddress = IPAddress; }
+}
