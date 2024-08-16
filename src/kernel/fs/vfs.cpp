@@ -39,3 +39,60 @@ namespace Filesystem
         if (!vnode) return nullptr;
         return vnode->driver->vfsdriver_finddir(vnode, filename);
     }
+
+    uint64_t VirtualFilesystemManager::filelen(VirtualFilesystemNode* vnode)
+    {
+        if (!vnode) return 0;
+        return vnode->driver->vfsdriver_filelen(vnode);
+    }
+
+    VirtualFilesystemNode* VirtualFilesystemManager::open_file(char* filename, uint64_t flags)
+    {
+        // Currently we only support one mounted filesystem.
+        Common::DoublyLinkedListIterator<RealFilesystem> filesystem = m_mountedFilesystems.first();
+        for (; !filesystem.is_end(); ++filesystem)
+        {
+            if (filesystem->m_mountNumber == 0) { break; }
+        }
+        if (filesystem.is_end()) { return nullptr; }
+
+        // Find the root node of the filesystem from its hashmap
+        auto rootnode = filesystem->m_virtualNodeHashmap.find(filesystem->m_rootVirtualNodeNumber)->last;
+
+        VirtualFilesystemNode* node = &rootnode;
+
+        char fixedLengthFileName[180];
+        strcpy(fixedLengthFileName, filename);
+
+        // We traverse through the directory tree and update the file name with the relative path from the current directory.
+        while(fixedLengthFileName[0])
+        {
+            uint64_t substringIndex = 0;
+            // Find first occurence of directory separator if it exists.
+            for (char* p = fixedLengthFileName; *p!='\0'; p++)
+            {
+                if (*p=='/') { substringIndex = p - fixedLengthFileName; break; }
+            }
+            char substring[180];
+            if (substringIndex)
+            {
+                // The node is a directory, find next node by calling driver's finddir.
+                strncpy(substring, fixedLengthFileName, substringIndex);
+                substring[substringIndex] = '\0';
+                strcpy(fixedLengthFileName, fixedLengthFileName + substringIndex + 1);
+                auto oldNode = node;
+                node = finddir(node, substring);
+                if (oldNode->inodeNum != rootnode.inodeNum) { delete oldNode; }
+            }
+            else
+            {
+                // We have reached the file node.
+                auto oldNode = node;
+                node = finddir(node, fixedLengthFileName);
+                if (oldNode->inodeNum != rootnode.inodeNum) { delete oldNode; }
+                fixedLengthFileName[0] = '\0';
+            }
+        }
+        return node;
+    }
+}
