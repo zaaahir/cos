@@ -73,7 +73,33 @@ namespace Loader
                         Memory::MemoryManager::instance().alloc_page(request, task->get_tlTable());
                     }
                 }
+                if (sectionHeader->sh_type == SHT_NOBITS)
+                {
+                    // These sections should be filled with zeros.
+                    memset((void*)(sectionHeader->sh_addr), 0, sectionHeader->sh_size);
+                } else
+                {
+                    // Copy the section data from the ELF file into memory.
+                    memcpy((void*)(sectionHeader->sh_addr), (void *)(((uint64_t)elfFile) + sectionHeader->sh_offset), sectionHeader->sh_size);
+                }
             }
         }
+        // We copy the ELF file to 0x400000 for the libc.
+        memcpy((void*)0x400000, elfFile, sizeof(Elf64_Ehdr));
+
+        // Allocate a 16KiB stack at 0x1000000.
+        for (uint8_t* userStackPointer = (uint8_t*)0x1000000; userStackPointer < (uint8_t*)(0x1000000 + Memory::PAGE_4KiB*4); userStackPointer += Memory::PAGE_4KiB)
+        {
+            if (!Memory::MemoryManager::instance().get_physical_address(userStackPointer, task->get_tlTable()).get())
+            {
+                auto request = Memory::VirtualMemoryAllocationRequest(userStackPointer);
+                request.allowUserAccess = true;
+                request.allowWrite = true;
+                Memory::MemoryManager::instance().alloc_page(request, task->get_tlTable());
+            }
+        }
+        kfree(elfFile);
+        task->set_entry_point((void*)(elfFile->e_entry));
+        //vfs->close_file(file);
     }
 }
