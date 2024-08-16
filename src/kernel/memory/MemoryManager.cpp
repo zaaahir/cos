@@ -294,3 +294,63 @@ namespace Memory {
     {
         return static_cast<PML4Table*>(VirtualAddress(addressSpace.get_physical_address()).get())->get_physical_address(virtualAddress);
     }
+
+    PhysicalAddress PML4Table::get_physical_address(VirtualAddress virtualAddress)
+    {
+        auto entry = get_entry(virtualAddress);
+        if (!entry->is_present())
+            return PhysicalAddress(static_cast<uint64_t>(0));
+        auto pageDirectoryPointerTable = static_cast<PageDirectoryPointerTable*>(VirtualAddress(PhysicalAddress(entry->get_frame())).get());
+        return pageDirectoryPointerTable->get_physical_address(virtualAddress);
+    }
+
+    PhysicalAddress PageDirectoryPointerTable::get_physical_address(VirtualAddress virtualAddress)
+    {
+        auto entry = get_entry(virtualAddress);
+
+        if (!entry->is_present())
+            return PhysicalAddress(static_cast<uint64_t>(0));
+        
+        if (entry->get_flag(GenericEntry::Flag::PAGE_SIZE))
+            return entry->get_frame();
+        
+        auto pageDirectoryTable = static_cast<PageDirectoryTable*>(VirtualAddress(PhysicalAddress(entry->get_frame())).get());
+        return pageDirectoryTable->get_physical_address(virtualAddress);
+    }
+
+    PhysicalAddress PageDirectoryTable::get_physical_address(VirtualAddress virtualAddress)
+    {
+        auto entry = get_entry(virtualAddress);
+
+        if (!entry->is_present())
+            return PhysicalAddress(static_cast<uint64_t>(0));
+        
+        if (entry->get_flag(GenericEntry::Flag::PAGE_SIZE))
+            return entry->get_frame();
+        
+        auto pageTable = static_cast<PageTable*>(VirtualAddress(PhysicalAddress(entry->get_frame())).get());
+        return pageTable->get_physical_address(virtualAddress);
+    }
+
+    PhysicalAddress PageTable::get_physical_address(VirtualAddress virtualAddress)
+    {
+        auto entry = get_entry(virtualAddress);
+
+        if (!entry->is_present())
+            return PhysicalAddress(static_cast<uint64_t>(0));
+
+        return entry->get_frame();
+    }
+
+    void MemoryManager::alloc_page(VirtualMemoryAllocationRequest request, VirtualAddressSpace& addressSpace)
+    {
+        auto physicalAddress = alloc_physical_block();
+        request_virtual_map(VirtualMemoryMapRequest(request, physicalAddress), addressSpace);
+    }
+
+    void MemoryManager::free_page(VirtualMemoryFreeRequest request, VirtualAddressSpace& addressSpace)
+    {
+        auto physicalAddress = get_physical_address(request.virtualAddress, addressSpace);
+        request_virtual_unmap(VirtualMemoryUnmapRequest(request), addressSpace);
+    }
+}
