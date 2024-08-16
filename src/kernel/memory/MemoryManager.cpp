@@ -221,3 +221,76 @@ namespace Memory {
     {
         static_cast<PML4Table*>(VirtualAddress(addressSpace.get_physical_address()).get())->request_virtual_unmap(request);
     }
+
+    void PML4Table::request_virtual_unmap(VirtualMemoryUnmapRequest request)
+    {
+        auto entry = get_entry(request.virtualAddress);
+        if (!entry->is_present())
+            Kernel::panic("Virtual memory unmap request failed: Address does not exist.");
+        auto pageDirectoryPointerTable = static_cast<PageDirectoryPointerTable*>(VirtualAddress(PhysicalAddress(entry->get_frame())).get());
+
+        if (pageDirectoryPointerTable->request_virtual_unmap(request))
+        {
+            entry->free_table();
+        }
+        // The translation lookaside buffer stores recent virtual memory to physical memory translations. We need to invalidate this cache as we have changed the entry.
+        MemoryManager::instance().flush_tlb_entry(request.virtualAddress);
+    }
+
+    bool PageDirectoryPointerTable::request_virtual_unmap(VirtualMemoryUnmapRequest request)
+    {
+        auto entry = get_entry(request.virtualAddress);
+        if (!entry->is_present())
+            Kernel::panic("Virtual memory unmap request failed: Address does not exist.");
+
+        if (request.pageSize == PAGE_1GiB)
+        {
+            entry->clear();
+            return is_table_empty();
+        }
+
+        auto pageDirectoryTable = static_cast<PageDirectoryTable*>(VirtualAddress(PhysicalAddress(entry->get_frame())).get());
+        if (pageDirectoryTable->request_virtual_unmap(request))
+            entry->free_table();
+        return is_table_empty();
+    }
+
+    bool PageDirectoryTable::request_virtual_unmap(VirtualMemoryUnmapRequest request)
+    {
+        auto entry = get_entry(request.virtualAddress);
+        if (!entry->is_present())
+            Kernel::panic("Virtual memory unmap request failed: Address does not exist.");
+
+        if (request.pageSize == PAGE_2MiB)
+        {
+            entry->clear();
+            return is_table_empty();
+        }
+
+        auto pageTable = static_cast<PageTable*>(VirtualAddress(PhysicalAddress(entry->get_frame())).get());
+        if (pageTable->request_virtual_unmap(request))
+            entry->free_table();
+        return is_table_empty();
+    }
+
+    bool PageTable::request_virtual_unmap(VirtualMemoryUnmapRequest request)
+    {
+        auto entry = get_entry(request.virtualAddress);
+
+        if (!entry->get_frame().get()) { Kernel::panic("Virtual memory unmap request failed: Address does not exist."); }
+
+        entry->clear();
+        return is_table_empty();
+    }
+
+    void MemoryManager::remap_pages()
+    {
+        m_virtualAddressSpace = create_virtual_address_space();
+        switch_to_address_space(get_main_address_space());
+    }
+
+    // TODO: allow this to accept offsets into a page
+    PhysicalAddress MemoryManager::get_physical_address(VirtualAddress virtualAddress, VirtualAddressSpace& addressSpace)
+    {
+        return static_cast<PML4Table*>(VirtualAddress(addressSpace.get_physical_address()).get())->get_physical_address(virtualAddress);
+    }
