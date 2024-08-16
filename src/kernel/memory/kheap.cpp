@@ -73,3 +73,76 @@ namespace Memory {
         entry.size = header->size;
         return entry;
     }
+
+    HeapIndexEntry KernelHeapManager::get_entry(HeapChunkFooter* footer)
+    {
+        HeapIndexEntry entry = HeapIndexEntry();
+        entry.ptr = reinterpret_cast<uint8_t*>(footer) - footer->size;
+        entry.size = footer->size;
+        return entry;
+    }
+
+    HeapChunkHeader* KernelHeapManager::get_corresponding_header(HeapChunkFooter* footer)
+    {
+        return reinterpret_cast<HeapChunkHeader*>(reinterpret_cast<uint8_t*>(footer) - sizeof(HeapChunkHeader) - footer->size);
+    }
+
+    HeapChunkHeader* KernelHeapManager::get_next_header(HeapChunkHeader* header)
+    {
+        auto headerPointer = reinterpret_cast<uint8_t*>(header) + sizeof(HeapChunkHeader) + sizeof(HeapChunkFooter) + header->size;
+        if (headerPointer >= m_nextHeapPagePointer)
+            return nullptr;
+        return reinterpret_cast<HeapChunkHeader*>(headerPointer);
+    }
+
+    HeapChunkHeader* KernelHeapManager::get_prev_header(HeapChunkHeader* header)
+    {
+        auto footerPointer = reinterpret_cast<HeapChunkFooter*>(header) - 1;
+        if (reinterpret_cast<uint64_t>(footerPointer) < static_cast<uint64_t>(HEAP_BASE + HEAP_INDEX_SIZE))
+            return nullptr;
+        return get_corresponding_header(footerPointer);
+    }
+
+    // Expand the heap by adding an extra page at the end and merging the previous chunk if it was a hole.
+    void KernelHeapManager::expand()
+    {
+        Memory::MemoryManager::instance().alloc_page(VirtualMemoryAllocationRequest(m_nextHeapPagePointer, true, true));
+        auto oldFooter = reinterpret_cast<HeapChunkFooter*>(m_nextHeapPagePointer) - 1;
+        auto oldHeader = get_corresponding_header(oldFooter);
+
+        if (oldHeader->isHole)
+        {
+            // We can simply make the previous entry 4KiB larger.
+            HeapIndexEntry oldEntry = get_entry(oldFooter);
+            remove_entry(oldEntry);
+            oldEntry.size += PAGE_4KiB;
+            insert_entry(oldEntry);
+            write_entry_tags(oldEntry, true);
+        } else
+        {
+            // We need to insert a new entry for the new page.
+            HeapIndexEntry newEntry = HeapIndexEntry();
+            newEntry.ptr = m_nextHeapPagePointer + sizeof(HeapChunkHeader);
+            newEntry.size = PAGE_4KiB - sizeof(HeapChunkHeader) - sizeof(HeapChunkFooter);
+            insert_entry(newEntry);
+            write_entry_tags(newEntry, true);
+        }
+
+        m_nextHeapPagePointer += PAGE_4KiB;
+    }
+
+    void* KernelHeapManager::kmalloc(uint64_t size, uint64_t flags)
+    {
+        m_spinlock.acquire();
+
+        // If we need an aligned allocation, we need to request a bigger allocation and provide a pointer into a word-aligned address in the allocation.
+        uint64_t reqSize = size + (flags & WORD_ALIGN ? sizeof(HeapChunkHeader) + sizeof(HeapChunkFooter) + sizeof(uint64_t) : 0);
+
+        auto entry = find_smallest_entry_greater_than(reqSize);
+
+        // Keep expanding the heap until we find a sufficiently sized entry.
+        while (!entry)
+        {
+            expand();
+            entry = find_smallest_entry_greater_than(reqSize);
+        }
