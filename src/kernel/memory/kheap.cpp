@@ -146,3 +146,78 @@ namespace Memory {
             expand();
             entry = find_smallest_entry_greater_than(reqSize);
         }
+
+        HeapIndexEntry backEntry = *entry;
+
+        remove_entry(*entry);
+        if (flags & WORD_ALIGN)
+        {
+            // We need to split into two entries.
+            HeapIndexEntry frontEntry = backEntry;
+            frontEntry.size = 8 - ((2 * sizeof(HeapChunkHeader) + sizeof(HeapChunkFooter)) % 8);
+            insert_entry(frontEntry);
+            write_entry_tags(frontEntry, true);
+            backEntry.ptr += frontEntry.size + sizeof(HeapChunkFooter) + sizeof(HeapChunkHeader);
+            backEntry.size -= frontEntry.size + sizeof(HeapChunkFooter) + sizeof(HeapChunkHeader);
+        }
+        // The entry can be split into two - the allocation and the leftover free hole.
+        if (backEntry.size >= size + sizeof(HeapChunkFooter) + sizeof(HeapChunkHeader))
+        {
+            uint64_t oldEntrySize = backEntry.size;
+            backEntry.size = size;
+            HeapIndexEntry holeEntry = backEntry;
+            holeEntry.ptr += backEntry.size + sizeof(HeapChunkHeader) + sizeof(HeapChunkFooter);
+            holeEntry.size = oldEntrySize - size - sizeof(HeapChunkHeader) - sizeof(HeapChunkFooter);
+            write_entry_tags(holeEntry, true);
+            insert_entry(holeEntry);
+        }
+        write_entry_tags(backEntry, false);
+        m_spinlock.release();
+        return backEntry.ptr;
+    }
+
+    HeapChunkHeader* KernelHeapManager::get_header(HeapIndexEntry entry)
+    {
+        return reinterpret_cast<HeapChunkHeader*>(entry.ptr) - 1;
+    }
+
+    // If the next entry is also a hole, combine the two into a larger entry.
+    void KernelHeapManager::merge_forwards(HeapIndexEntry* entry)
+    {
+        auto nextHeader = get_next_header(get_header(*entry));
+        if (nextHeader)
+        {
+            if (nextHeader->isHole)
+            {
+                auto nextEntry = get_entry(nextHeader);
+                // Remove the two smaller entries.
+                remove_entry(*entry);
+                remove_entry(nextEntry);
+                entry->size += nextHeader->size + sizeof(HeapChunkHeader) + sizeof(HeapChunkFooter);
+                // Insert the larger, combined entry.
+                insert_entry(*entry);
+                write_entry_tags(*entry, true);
+            }
+        }
+    }
+
+    // If the previous entry is also a hole, combine the two into a larger entry.
+    void KernelHeapManager::merge_backwards(HeapIndexEntry* entry)
+    {
+        auto prevHeader = get_prev_header(get_header(*entry));
+        if (prevHeader)
+        {
+            if (prevHeader->isHole)
+            {
+                auto prevEntry = get_entry(prevHeader);
+                // Remove the two smaller entries.
+                remove_entry(*entry);
+                remove_entry(prevEntry);
+                entry->size += prevHeader->size + sizeof(HeapChunkHeader) + sizeof(HeapChunkFooter);
+                entry->ptr -= prevHeader->size + sizeof(HeapChunkHeader) + sizeof(HeapChunkFooter);
+                // Insert the larger, combined entry.
+                insert_entry(*entry);
+                write_entry_tags(*entry, true);
+            }
+        }
+    }
