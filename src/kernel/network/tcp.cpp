@@ -323,3 +323,81 @@ namespace Networking
                 break;
             }
         }
+
+        TransmissionControlProtocolManager::TransmissionControlProtocolManager() : InternetProtocolV4::InternetProtocolHandler(InternetProtocolV4::InternetProtocolManager::instance(), 0x06) {}
+
+        void TransmissionControlProtocolManager::on_receive_ip(InternetProtocolV4Address sourceIPAddressBigEndian, InternetProtocolV4Address destinationIPAddressBigEndian, uint8_t* payload, uint32_t size)
+        {
+            auto header = (TransmissionControlProtocolHeader*)payload;
+            uint16_t localPort = header->get_dest_port();
+            uint16_t remotePort = header->get_source_port();
+
+            // Search for a socket that listens for the connection
+            for (auto socketIt = m_sockets.first(); !socketIt.is_end(); ++socketIt)
+            {
+                // We have a listening socket.
+                if ((*socketIt)->m_localPort == header->get_dest_port()
+                && (*socketIt)->m_localIP == destinationIPAddressBigEndian
+                && (*socketIt)->m_state == TransmissionControlProtocolSocket::State::LISTEN)
+                {
+                    // Set the socket's remote endpoint to the sender of the message.
+                    (*socketIt)->m_remotePort = header->get_source_port();
+                    (*socketIt)->m_remoteIP = sourceIPAddressBigEndian;
+                }
+                else if (!((*socketIt)->m_localPort == header->get_dest_port()
+                    && (*socketIt)->m_localIP == destinationIPAddressBigEndian
+                    && (*socketIt)->m_remotePort == header->get_source_port()
+                    && (*socketIt)->m_remoteIP == sourceIPAddressBigEndian))
+                {
+                    // The socket is already connected to another endpoint.
+                    continue;
+                }
+                (*socketIt)->receive_TCP_message(sourceIPAddressBigEndian, destinationIPAddressBigEndian, payload, size);
+            }
+        }
+
+        TransmissionControlProtocolSocket* TransmissionControlProtocolManager::listen(uint16_t port)
+        {
+            TransmissionControlProtocolSocket* socket = new TransmissionControlProtocolSocket();
+            socket->m_state = TransmissionControlProtocolSocket::State::LISTEN;
+            socket->m_localPort = bigEndian16(port);
+            socket->m_localIP = Ethernet::EthernetLayerManager::instance()->get_IP_address();
+            //socket->m_localPort = bigEndian16;
+            auto it = m_sockets.append(socket);
+            return *it;
+        }
+
+        void TransmissionControlProtocolManager::bind(TransmissionControlProtocolSocket* socket, TransmissionControlProtocolHandler* handler)
+        {
+            socket->m_handler = handler;
+        }
+
+        TransmissionControlProtocolSocket* TransmissionControlProtocolManager::connect(InternetProtocolV4Address IPAddress, uint16_t port)
+        {
+            TransmissionControlProtocolSocket* socket = new TransmissionControlProtocolSocket();
+            socket->m_localPort = m_freePort++;
+            socket->m_localIP = Ethernet::EthernetLayerManager::instance()->get_IP_address();
+            socket->m_localPort = ((socket->m_localPort & 0xFF00)>>8) | ((socket->m_localPort & 0x00FF) << 8);
+            socket->m_remoteIP = IPAddress;
+            socket->m_remotePort = bigEndian16(port);
+            // These are TCP spec. defined variables.
+            socket->snd_una = 0xbeef0101;
+            socket->snd_nxt = 0xbeef0101;
+            socket->snd_wnd = 8192;
+            socket->snd_up = 0;
+            socket->snd_wl1 = 0;
+            socket->snd_wl2 = 0;
+            socket->iss = 0xbeef0101;
+            socket->rcv_nxt = 0;
+            socket->rcv_wnd = 8192;
+            socket->rcv_up = 0;
+            socket->irs = 0;
+            // Send a SYN to initiate connection initialisation.
+            socket->send(socket->snd_nxt, 0, 0, TransmissionControlProtocolHeader::Flag::SYN);
+            socket->m_state = TransmissionControlProtocolSocket::State::SYN_SENT;
+            auto it = m_sockets.append(socket);
+            return *it;
+        }
+
+    }
+}
