@@ -174,3 +174,80 @@ namespace Networking
                 }
             }
         }
+
+        void TransmissionControlProtocolSocket::receive_rst(TransmissionControlProtocolHeader* header) {}
+
+        void TransmissionControlProtocolSocket::receive_fin(TransmissionControlProtocolHeader* header)
+        {
+            // We just acknowledge the FIN.
+            rcv_nxt = bigEndian32(header->get_seq_number()) + 1;
+            send(snd_nxt, 0, 0, TransmissionControlProtocolHeader::Flag::ACK);
+
+            switch (m_state)
+            {
+            case SYN_RECEIVED:
+            case ESTABLISHED:
+                m_state = CLOSE_WAIT;
+                break;
+            case FIN_WAIT1:
+                if (header->get_ack_number() > snd_nxt)
+                {
+                    m_state = TIME_WAIT;
+                }
+                else
+                {
+                    m_state = CLOSING;
+                }
+                break;
+            case FIN_WAIT2:
+            case TIME_WAIT:
+                m_state = TIME_WAIT;
+                break;
+            default:
+                break;
+            }
+        }
+
+        void TransmissionControlProtocolSocket::receive_TCP_message(InternetProtocolV4Address source, InternetProtocolV4Address dest, uint8_t* data, uint16_t size)
+        {
+            // We need to include a pseudoheader to calculate the checksum and verify it.
+            auto sizeInclPseudoHeader = sizeof(TransmissionControlProtocolPseudoHeader) + size;
+            auto buf = (uint8_t*)kmalloc(sizeInclPseudoHeader, 0);
+
+            memcpy(buf+sizeof(TransmissionControlProtocolPseudoHeader), data, size);
+            auto pseudoHeader = (TransmissionControlProtocolPseudoHeader*)buf;
+            auto header = (TransmissionControlProtocolHeader*)(buf+sizeof(TransmissionControlProtocolPseudoHeader));
+            pseudoHeader->set_dest_ip(dest);
+            pseudoHeader->set_source_ip(source);
+            pseudoHeader->set_length((bigEndian16(size)));
+            pseudoHeader->set_protocol(0x0600);
+
+            // Drop the packet if the checksum is not valid.
+            if (InternetProtocolV4::InternetProtocolManager::instance()->checksum((uint16_t*)buf, sizeInclPseudoHeader))
+                return;
+
+            header = (TransmissionControlProtocolHeader*)data;
+            
+            // Handle the cases that we are either listening as a server or trying to connect as a client.
+            switch(m_state)
+            {
+            case LISTEN:
+                return receive_on_listen(header);
+            case SYN_SENT:
+                return receive_on_syn_sent(header);
+            default:
+                break;
+            }
+
+            if (header->get_flags() & TransmissionControlProtocolHeader::Flag::RST)
+            {
+                return receive_rst(header);
+            }
+
+            // We have already handled the case that we are listening or trying to connect, so if we have
+            // a SYN flag (used to intialise connections), we need to reset the connection.
+
+            if (header->get_flags() & TransmissionControlProtocolHeader::Flag::SYN)
+            {
+                return send(0, 0, 0, TransmissionControlProtocolHeader::Flag::RST | TransmissionControlProtocolHeader::Flag::ACK);
+            } 
