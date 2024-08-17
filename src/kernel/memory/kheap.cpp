@@ -221,3 +221,41 @@ namespace Memory {
             }
         }
     }
+
+    void KernelHeapManager::kfree(void* ptr)
+    {
+        m_spinlock.acquire();
+
+        auto header = reinterpret_cast<HeapChunkHeader*>(ptr) - 1;
+        // Add the entry into the index binary search tree.
+        auto entry = get_entry(header);
+        insert_entry(entry);
+        write_entry_tags(entry, true);
+
+        // Try and merge with holes either side, if they exist.
+        merge_forwards(&entry);
+        merge_backwards(&entry);
+
+        m_spinlock.release();
+    }
+
+    HeapIndexEntry* KernelHeapManager::find_smallest_entry_greater_than(uint64_t size)
+    {
+        // We insert a searchEntry that is of the requested size and find the successor to the node in the binary search tree.
+        // The successor is the smallest entry that is greater than the searchEntry.
+        if (m_bst.get_size() + m_bst.get_size_of_one_node() > reinterpret_cast<uint64_t>(m_nextIndexPagePointer - HEAP_BASE))
+        {
+            Memory::MemoryManager::instance().alloc_page(VirtualMemoryAllocationRequest(m_nextIndexPagePointer, true, true));
+            m_nextIndexPagePointer += PAGE_4KiB;
+        }
+        HeapIndexEntry searchEntry = HeapIndexEntry();
+        searchEntry.size = size;
+        auto retEntry = m_bst.get_successor(searchEntry);
+        if (m_bst.get_size() < reinterpret_cast<uint64_t>(m_nextIndexPagePointer - HEAP_BASE - PAGE_4KiB))
+        {
+            Memory::MemoryManager::instance().free_page(VirtualMemoryFreeRequest(m_nextIndexPagePointer - PAGE_4KiB));
+            m_nextIndexPagePointer -= PAGE_4KiB;
+        }
+        return retEntry;
+    }
+}
