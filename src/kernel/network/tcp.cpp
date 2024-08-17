@@ -251,3 +251,75 @@ namespace Networking
             {
                 return send(0, 0, 0, TransmissionControlProtocolHeader::Flag::RST | TransmissionControlProtocolHeader::Flag::ACK);
             } 
+
+            // All packets after the initial packet must have the ACK flag set.
+            if (!(header->get_flags() & TransmissionControlProtocolHeader::Flag::ACK))
+            {
+                return;
+            }
+
+            // Update with the contents of the new packet.
+            receive_ack(header);
+            receive_data(data, size);
+
+            // The sender has requested to end the connection.
+            if (header->get_flags() & TransmissionControlProtocolHeader::Flag::FIN)
+            {
+                receive_fin(header);
+                return;
+            }
+        }
+
+        void TransmissionControlProtocolSocket::add_to_received(const TCPPacket& packet)
+        {
+            auto it = m_outOfOrderList.first();
+            for (; !it.is_end(); ++it)
+            {
+                if (packet.sequenceNumber < it->sequenceNumber) { break; }
+            }
+            m_outOfOrderList.insert_before(packet, it);
+        }
+
+        void TransmissionControlProtocolSocket::process_received()
+        {
+            for (auto it = m_outOfOrderList.first(); !it.is_end();)
+            {
+                // If we now have missing packets, we can send them to the application.
+                if (rcv_nxt != bigEndian32(it->sequenceNumber)) { break; }
+                rcv_nxt += it->length;
+
+                char* print = " ";
+                for(int i = 0; i < it->length; i++)
+                {
+                    print[0] = ((uint8_t*)it->data)[i];
+                    printf(print);
+                }
+                it = m_outOfOrderList.remove(it);
+            }
+        }
+
+        void TransmissionControlProtocolSocket::receive_data(uint8_t* data, uint16_t size)
+        {
+            auto header = (TransmissionControlProtocolHeader*)data;
+            auto headerSize = header->get_data_offset()*4;
+
+            if (headerSize >= size) { return; }
+
+            switch(m_state)
+            {
+            case ESTABLISHED:
+                TCPPacket packet;
+                packet.data = data+headerSize;
+                packet.length = size-headerSize;
+                packet.sequenceNumber = header->get_seq_number();
+                // Add to the received queue.
+                add_to_received(packet);
+                // Check if we can send the received packets to the application layer.
+                process_received();
+                // Acknowledge the packet.
+                send(snd_nxt, 0, 0, TransmissionControlProtocolHeader::Flag::ACK);
+                break;
+            default:
+                break;
+            }
+        }
