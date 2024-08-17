@@ -63,3 +63,40 @@ namespace Networking
             arpmsg.targetProtocolAddress = IPAddressBigEndian;
             m_ethernetLayerManager->send_data(ARP_BROADCAST_ADDRESS, m_etherTypeBigEndian, (uint8_t*)&arpmsg, sizeof(AddressResolutionProtocolMessage));
         }
+
+        uint64_t AddressResolutionProtocolManager::find_cached_IP_address(uint32_t IPAddressBigEndian)
+        {
+            auto it = m_MACCache.find(IPAddressBigEndian);
+            if (!it.is_end())
+            {
+                return it->last;
+            }
+            return 0;
+        }
+
+        void AddressResolutionProtocolManager::broadcast_MAC_address(uint32_t IPAddressBigEndian)
+        {
+            AddressResolutionProtocolMessage message;
+            message.hardwareType = 0x0100;
+            message.protocolType = 0x0008;
+            message.hardwareAddressLen = 6;
+            message.protocolAddressLen = 4;
+            message.operation = 0x0200;
+
+            message.senderHardwareAddress = m_ethernetLayerManager->get_MAC_address();
+            message.senderProtocolAddress = m_ethernetLayerManager->get_IP_address();
+            message.targetHardwareAdddress = find_cached_IP_address(IPAddressBigEndian);
+            if (!message.targetHardwareAdddress)
+            {
+                send_ARP_request(IPAddressBigEndian);
+                while (!message.targetHardwareAdddress)
+                {
+                    message.targetHardwareAdddress = find_cached_IP_address(IPAddressBigEndian);
+                }
+            }
+            message.targetProtocolAddress = IPAddressBigEndian;
+
+            m_ethernetLayerManager->send_data(message.targetHardwareAdddress, 0x0608, (uint8_t*)&message, sizeof(AddressResolutionProtocolMessage));
+        }
+    }
+}
