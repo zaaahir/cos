@@ -72,3 +72,58 @@ uint64_t elisten_syscall(uint64_t ed)
     Events::EventDispatcher::block_event_listen(process, ed);
     return 1;*/
 }
+
+uint64_t ederegister_syscall(uint64_t ed)
+{
+    /*auto process = Processes::Scheduler::instance()->get_current_process();
+    return Events::EventDispatcher::deregister_event_listener(process, ed);*/
+}
+
+uint64_t eread_syscall(uint64_t ed, uint64_t buf, uint64_t count)
+{
+    /*auto process = Processes::Scheduler::instance()->get_current_process();
+    return Events::EventDispatcher::read_from_event_queue(process, ed);*/
+}
+
+uint64_t printtoscreen_syscall(uint64_t arg1)
+{
+    char* str = (char*)arg1;
+    printf(str);
+    return 1;
+}
+
+uint64_t Processes::syscall_handler(uint64_t arg1, uint64_t arg2, uint64_t arg3, uint64_t arg4, uint64_t arg5, uint64_t arg6)
+{
+    //asm volatile ("hlt");
+    uint64_t rrax;
+    asm volatile("mov %%rax, %0" : "=r" (rrax));
+    switch (rrax)
+    {
+        case SYSCALL_DPRINTF:
+        return printtoscreen_syscall(arg1);
+        case SYSCALL_VMMAP:
+        return vmmap_syscall(reinterpret_cast<uint64_t*>(arg1), arg2, arg3, arg4);
+        case SYSCALL_VMUNMAP:
+        return vmumap_syscall(arg1, arg2);
+        case SYSCALL_FOPEN:
+        return fopen_syscall(arg1, arg2);
+        case SYSCALL_FREAD:
+        return fread_syscall(arg1, arg2, arg3);
+        case SYSCALL_FCLOSE:
+        return fclose_syscall(arg1);
+        case SYSCALL_EREGISTER:
+        return eregister_syscall(arg1, arg2);
+        case SYSCALL_ELISTEN:
+        return elisten_syscall(arg1);
+        case SYSCALL_EDEREGISTER:
+        return ederegister_syscall(arg1);
+        case SYSCALL_EREAD:
+        return eread_syscall(arg1, arg2, arg3);
+        case SYSCALL_SLEEP_FOR:
+        return sleep_for_syscall(arg1);
+        case 99:
+        printf(arg1);
+        return 0;
+
+    }
+}
