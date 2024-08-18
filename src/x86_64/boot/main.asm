@@ -1,3 +1,4 @@
+section .text
 global _start
 global stackTop
 global gdt64.pointer
@@ -74,3 +75,81 @@ init_paging_and_long_mode:
 
     lgdt [gdt64.pointer-KERNEL_V_BASE]
     ret
+
+section .data
+tss64:
+    dd 0
+    dq 0
+    dq 0
+    dq 0
+    dq 0
+    dq 0
+    dq 0
+    dq 0
+    dq 0
+    dq 0
+    dq 0
+    dq 0
+    dq 0
+    dw 0
+    dw 0 
+
+gdt64:
+.zero_entry_0:
+    ; first entry must be zero
+    dq 0
+.kernelCodeSegment: equ $ - gdt64
+    ; segment limit
+    dw 1111111111111111b
+    ; base address (LSB 24 bits)
+    dw 0 ; base addr 15:00
+    db 0 ; base addr 23:16
+    ; access byte
+    db 10011010b
+    ; flags
+    db 10101111b
+    ; base address (MSB 8 bits)
+    db 0
+.kernelDataSegment: equ $ - gdt64
+    dw 1111111111111111b
+    dw 0
+    db 0
+    db 10010010b
+    db 11001111b                
+    db 0
+.zero_entry_1:
+    dq 0
+.userspaceDataSegment: equ $ - gdt64
+    dw 1111111111111111b
+    dw 0
+    db 0
+    db 11110010b                
+    db 11001111b          
+    db 0
+.userspaceCodeSegment: equ $ - gdt64
+    dw 1111111111111111b
+    dw 0
+    db 0
+    db 11111010b                
+    db 10101111b                  
+    db 0
+.taskStateSegmentLow: equ $ - gdt64
+    dq 0
+.taskStateSegmentHigh: equ $ - gdt64
+    dq 0
+.pointer:
+    ; length
+    dw $ - gdt64 - 1 
+    ; address
+    dq gdt64 
+
+section .bss
+align 0x1000
+pageTableL4:
+    resb 4096
+pageTableL3:
+    resb 4096
+; Reserve 32KiB for the stack 
+stackBottom:
+    resb 4096*16 
+stackTop:
