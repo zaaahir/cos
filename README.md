@@ -53,13 +53,13 @@ These are checkboxes, but I will probably only review these guidlines at the end
 
 ### cOS filesystem layer
 
-- [ ] - The layer provides an interface for multiple filesystems mounted in a single virtual filesystem.
-  - [ ] - It provides an implementation for a driver for the USTAR tar file format.
-- [ ] - The layer provides `read` and `write` interfaces for filesystem drivers.
+- [x] - The layer provides an interface for multiple filesystems mounted in a single virtual filesystem.
+  - [x] - It provides an implementation for a driver for the USTAR tar file format.
+- [x] - The layer provides `read` and `write` interfaces for filesystem drivers.
 
 ### cOS networking layer
 
-- [ ] - The kernel can provide networking services.
+- [x] - The kernel can provide networking services.
   - [ ] - It provides an adaptable interface for different network card drivers.
     - [ ] - It provides an implementation for the AMD Am79C973 network card.
   - [ ] - It provides an interface for sending and receiving Ethernet frames.
@@ -945,6 +945,187 @@ printf(*(uint8_t*) 4321);
 <p align="center">
 <i>Kernel code used to access address for test 1.9.  </i>
 </p>
+
+<p align="center">
+<img width="700" alt="Screenshot 2024-08-19 at 11 31 53" src="https://github.com/user-attachments/assets/1cb1efb0-e675-4b76-a5a3-98efb4a4684e" alt="Screenshot of allocation not being overwritten for test 2.1. ">
+</p>
+
+<p align="center">
+<i>Screenshot of allocation not being overwritten for test 2.1.  </i>
+</p>
+
+```cpp
+// Allocate 10 bytes. 
+    auto allocation = kmalloc(10, 0); 
+    uint8_t magicBytes[10] = {0x03, 0x11, 0x3F, 0x5C, 0x91, 0x11, 0x44, 0x53, 0xDE, 0xB0}; 
+    // Copy magicBytes into allocation. 
+    memcpy(allocation, magicBytes, 10); 
+    // Allocate more bytes. 
+    auto secondAllocation = kmalloc(100, 0); 
+    kfree(secondAllocation); 
+    // Check first allocation has not been overwritten. 
+    bool overwritten = false; 
+    for (int i = 0; i < 10; i++) 
+    { 
+        if (static_cast<uint8_t*>(allocation)[i] != magicBytes[i]) 
+        { 
+            overwritten = true; 
+            break; 
+        } 
+    } 
+    if (!overwritten) 
+        printf("Allocation was not overwritten."); 
+```
+
+<p align="center">
+<i>Kernel code used to allocate memory for test 2.1. </i>
+</p>
+
+<p align="center">
+<img width="700" alt="Screenshot 2024-08-19 at 11 31 53" src="https://github.com/user-attachments/assets/084133b8-c96b-44ab-b723-2051b108256e" alt="Screenshot of kernel not crashing for test 2.2.">
+</p>
+
+<p align="center">
+<i>Screenshot of kernel not crashing for test 2.2. </i>
+</p>
+
+```cpp
+// Allocate 8192 bytes. 
+auto allocation = kmalloc(8192, 0); 
+```
+
+<p align="center">
+<i>Kernel code used to allocate memory for test 2.2. </i>
+</p>
+
+<p align="center">
+<img width="700" alt="Screenshot 2024-08-19 at 11 31 53" src="https://github.com/user-attachments/assets/2b5a3e14-43cd-4dff-a08a-1c2e1b238525" alt="Screenshot of detected PCI devices for test 2.3.">
+</p>
+
+<p align="center">
+<i>Screenshot of detected PCI devices for test 2.3. </i>
+</p>
+
+
+<p align="center">
+<img width="700" alt="Screenshot 2024-08-19 at 11 31 53" src="https://github.com/user-attachments/assets/98a1f750-cd2a-4ad8-9758-79f9c621f058" alt="Screenshot of QEMU monitor dump of emulated PCI devices for test 2.3.">
+</p>
+
+<p align="center">
+<i>Screenshot of QEMU monitor dump of emulated PCI devices for test 2.3. </i>
+</p>
+
+<p align="center">
+<img width="700" alt="Screenshot 2024-08-19 at 11 31 53" src="https://github.com/user-attachments/assets/e46ea115-b1e4-4836-b583-330056a5a52a" alt="Screenshot of reading initrd/afile.txt for test 2.4. ">
+</p>
+
+<p align="center">
+<i>Screenshot of reading initrd/afile.txt for test 2.4.  </i>
+</p>
+
+```
+Hello there!
+```
+
+<p align="center">
+<i>Contents of initrd/afile.txt  </i>
+</p>
+
+```cpp
+auto file = Filesystem::VirtualFilesystemManager::instance().open_file("initrd/afile.txt", 0); 
+    auto fileLength = Filesystem::VirtualFilesystemManager::instance().filelen(file); 
+    // Allocate a buffer to copy the contents of the file into. 
+    // We add one to the length to add a null terminator. 
+    auto fileBuffer = (char*) kmalloc(fileLength + 1, 0); 
+    Filesystem::VirtualFilesystemManager::instance().read(file, 0, fileLength, fileBuffer); 
+    // Add null terminator to string. 
+    fileBuffer[fileLength] = '\0'; 
+    printf("File contents: "); 
+    printf(fileBuffer);
+```
+
+<p align="center">
+<i>Kernel code used to read file for test 2.4. </i>
+</p>
+
+<p align="center">
+<img width="700" alt="Screenshot 2024-08-19 at 11 31 53" src="https://github.com/user-attachments/assets/f997d6f1-cad0-42c3-8964-2339f0aec419" alt="Screenshot of reading initrd/dir/afile.txt for test 2.5. ">
+</p>
+
+<p align="center">
+<i>Screenshot of reading initrd/dir/afile.txt for test 2.5. </i>
+</p>
+
+```cpp
+auto file = Filesystem::VirtualFilesystemManager::instance().open_file("initrd/dir/afile.txt", 0); 
+    auto fileLength = Filesystem::VirtualFilesystemManager::instance().filelen(file); 
+    // Allocate a buffer to copy the contents of the file into. 
+    // We add one to the length to add a null terminator. 
+    auto fileBuffer = (char*) kmalloc(fileLength + 1, 0); 
+    Filesystem::VirtualFilesystemManager::instance().read(file, 0, fileLength, fileBuffer); 
+    // Add null terminator to string. 
+    fileBuffer[fileLength] = '\0'; 
+    printf("File in directory contents: "); 
+    printf(fileBuffer);
+```
+
+<p align="center">
+<i>Kernel code used to read file for test 2.5.  </i>
+</p>
+
+<p align="center">
+<img width="700" alt="Screenshot 2024-08-19 at 11 31 53" src="https://github.com/user-attachments/assets/645b46f7-1825-4122-85c1-7f3e446a97c4" alt="Screenshot of receiving keyboard events for test 2.6.  ">
+</p>
+
+<p align="center">
+<i>Screenshot of receiving keyboard events for test 2.6. </i>
+</p>
+
+```cpp
+auto eventDescriptor = Events::EventDispatcher::instance().register_event_listener(Task::TaskManager::instance().get_current_task(), "HID/Keyboard", 0); 
+    while (1) 
+
+    { 
+
+        Events::EventDispatcher::instance().block_event_listen(Task::TaskManager::instance().get_current_task(), eventDescriptor); 
+
+        auto scanCode = (uint8_t)Events::EventDispatcher::instance().read_from_event_queue(Task::TaskManager::instance().get_current_task(), eventDescriptor); 
+
+        printf("Scan code received: "); 
+
+        printf(scanCode); 
+
+        printf("\n");
+    }
+```
+
+<p align="center">
+<i>Kernel code used to receive keyboard events for test 2.6.</i>
+</p>
+
+<p align="center">
+<img width="700" alt="Screenshot 2024-08-19 at 11 31 53" src="https://github.com/user-attachments/assets/8fab77fc-8925-4b53-81fe-694225cf5c79" alt="Screenshot of Wireshark showing “Hello network!”
+  transmitted on the network for test 3.1. ">
+</p>
+
+<p align="center">
+<i>Screenshot of Wireshark showing “Hello network!”<br>
+  transmitted on the network for test 3.1.  </i>
+</p>
+
+
+```cpp
+AMDPCNETIIIDriver.send_data((uint8_t*)"Hello network!", 14); 
+```
+
+<p align="center">
+<i>Kernel code used to transmit on network for test 3.1. </i>
+</p>
+
+
+
+
+
 
 
 ## Resources
