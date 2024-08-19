@@ -501,6 +501,241 @@ We show hierarchy charts for each part of the operating system, followed by a ta
   </tr>
 </table>
 
+## Testing
+
+I will test using white-box testing, as black-box testing would not be appropriate for the kernel. Instead, code segments are run in the kernel or as processes. 
+
+### Processor Initialisation 
+
+It is the operating system’s responsibility to properly initialise the processor to be able to execute code at various privilege levels, receive interrupts and use virtual memory addressing. To execute the operating system, I will use virtualisation software to emulate real hardware. I will be using QEMU.
+
+<table>
+  <tr>
+   <td>Test ID 
+   </td>
+   <td>Description 
+   </td>
+   <td>Expected result 
+   </td>
+  </tr>
+  <tr>
+   <td>1.1 
+   </td>
+   <td>The operating system will boot. This is tested by running in QEMU. 
+   </td>
+   <td>The operating system boots without a General Protection Fault. 
+   </td>
+  </tr>
+  <tr>
+   <td>1.2 
+   </td>
+   <td>All physical memory is detected by the operating system. This is tested by outputting the memory region map and comparing to QEMU’s input parameters. 
+   </td>
+   <td>The regions of physical memory correspond to the QEMU memory length. 
+   </td>
+  </tr>
+  <tr>
+   <td>1.3 
+   </td>
+   <td>Physical memory is loaded into the virtual memory address space. This is tested by printing the contents of a virtual memory address corresponding to <code>0x1000</code> and comparing to a debug log of physical memory contents. 
+   </td>
+   <td>The virtual memory access matches the physical memory access. 
+   </td>
+  </tr>
+  <tr>
+   <td>1.4 
+   </td>
+   <td>The GDT is loaded with a valid entry. This is tested by checking the QEMU monitor GDT register (GDTR). 
+   </td>
+   <td>The GDTR holds a valid GDT address as reported by QEMU. 
+   </td>
+  </tr>
+  <tr>
+   <td>1.5 
+   </td>
+   <td>Page allocation is functional. This is tested by allocating address <code>0x1000</code>.  
+   </td>
+   <td>Without allocating, a page fault occurs. After allocating, no page fault occurs on access.  
+   </td>
+  </tr>
+  <tr>
+   <td>1.6 
+   </td>
+   <td>The IDT is loaded with a valid entry. This is tested by checking the QEMU monitor IDT register (IDTR). 
+   </td>
+   <td>The IDTR holds a valid IDT address as reported by QEMU. 
+   </td>
+  </tr>
+  <tr>
+   <td>1.7 
+   </td>
+   <td>The Programmable Interrupt Controller is initialised and remapped to <code>0x20</code> (PIC0) and <code>0x28</code> (PIC1). This would be tested by reading the QEMU monitors PIC offsets. 
+   </td>
+   <td>The PIC offsets are remapped. 
+   </td>
+  </tr>
+  <tr>
+   <td>1.8 
+   </td>
+   <td>Hardware interrupts call the interrupt handler. This is tested by sending keyboard scan-codes. 
+   </td>
+   <td>The keyboard scan-codes are printed on the screen. 
+   </td>
+  </tr>
+  <tr>
+   <td>1.9 
+   </td>
+   <td>Unmapped pages cause page fault. This is tested by attempting to access an unmapped page in low memory. 
+   </td>
+   <td>A page fault occurs. 
+   </td>
+  </tr>
+</table>
+
+### Kernel Resource Management
+
+I will also test that the kernel manages hardware resources properly. This includes the kernel heap, the PCI bus and the virtual filesystem.
+
+
+<table>
+  <tr>
+   <td>Test ID 
+   </td>
+   <td>Description 
+   </td>
+   <td>Expected result 
+   </td>
+  </tr>
+  <tr>
+   <td>2.1 
+   </td>
+   <td>The kernel heap allocations can be filled with data and is not overwritten with successive allocations. This is tested by ensuring data stored in an allocation remains the same. 
+   </td>
+   <td>The allocation data is not overwritten. 
+   </td>
+  </tr>
+  <tr>
+   <td>2.2 
+   </td>
+   <td>Allocations larger than a page can be made. This is tested by allocating <code>8192</code> bytes. 
+   </td>
+   <td>The kernel does not crash or raise any exception. 
+   </td>
+  </tr>
+  <tr>
+   <td>2.3 
+   </td>
+   <td>All devices on the PCI bus are detected. This is tested by comparing the detected devices to the QEMU monitor PCI devices. 
+   </td>
+   <td>All devices are the same. 
+   </td>
+  </tr>
+  <tr>
+   <td>2.4 
+   </td>
+   <td>Reading files from initial ramdisk (initrd). This is tested by placing a file inside the initrd and reading it. 
+   </td>
+   <td>The displayed contents is the same as the file content. 
+   </td>
+  </tr>
+  <tr>
+   <td>2.5 
+   </td>
+   <td>Read files inside directories from initial ramdisk. This is tested by placing a directory inside the initrd and reading it. 
+   </td>
+   <td>The displayed contents is the same as the file content 
+   </td>
+  </tr>
+  <tr>
+   <td>2.6 
+   </td>
+   <td>Event dispatching works. This is tested by receiving keyboard events in a task. 
+   </td>
+   <td>The keyboard scan-codes are printed on the screen by the task. 
+   </td>
+  </tr>
+</table>
+
+### Networking 
+
+To test networking, I will use QEMU’s command line to save a dump of network communications. This dump can then be read with Wireshark to check whether protocols are conformed to. 
+
+
+<table>
+  <tr>
+   <td>Test ID 
+   </td>
+   <td>Description 
+   </td>
+   <td>Expected result 
+   </td>
+  </tr>
+  <tr>
+   <td>3.1 
+   </td>
+   <td>Able to send data over the network. This is tested by calling the network driver’s send function with a string. 
+   </td>
+   <td>Wireshark displays that only the string has been sent over the network.  
+   </td>
+  </tr>
+  <tr>
+   <td>3.2 
+   </td>
+   <td>Able to send well-formed Ethernet packets over the network. This is tested by calling the Ethernet layer manager’s send function with a string. 
+   </td>
+   <td>Wireshark displays a valid Ethernet frame has been sent (other than an invalid EtherType). 
+   </td>
+  </tr>
+  <tr>
+   <td>3.3 
+   </td>
+   <td>Able to resolve an IP address to a MAC address. This is tested by calling the Address Resolution Protocol layer manager’s resolve function for the gateway IP address. 
+   </td>
+   <td>Wireshark displays a valid ARP request and a valid ARP response from the gateway. The result is cached. 
+   </td>
+  </tr>
+  <tr>
+   <td>3.4 
+   </td>
+   <td>Able to send IPv4 packets. This is tested by calling the IPv4 layer manager’s send function with a string to send to the gateway IP. 
+   </td>
+   <td>Wireshark displays an ARP response and reply and then a valid IPv4 frame (other than the protocol type). 
+   </td>
+  </tr>
+  <tr>
+   <td>3.5 
+   </td>
+   <td>Able to send UDP packets. This is tested by calling the UDP layer manager’s send function with a string to send to the gateway IP. 
+   </td>
+   <td>Wireshark displays a compliant UDP transmission. 
+   </td>
+  </tr>
+  <tr>
+   <td>3.6 
+   </td>
+   <td>Able to receive UDP packets. This is tested by listening on a socket for connections and sending data using netcat. 
+   </td>
+   <td>The correct transmitted data is printed on the screen. 
+   </td>
+  </tr>
+  <tr>
+   <td>3.7 
+   </td>
+   <td>Able to connect to a remote TCP server. This is tested by connecting to a server hosted on the host machine using netcat.   
+   </td>
+   <td>Wireshark displays a compliant TCP transmission. 
+   </td>
+  </tr>
+  <tr>
+   <td>3.8 
+   </td>
+   <td>Able to send a HTTP POST request to an online website. This is tested by connecting to a webhook monitoring website webhook.site. 
+   </td>
+   <td>Wireshark displays a compliant HTTP transmission. 
+   </td>
+  </tr>
+</table>
+
 ## Resources
 
 1 - OSDev Wiki (https://osdev.wiki/wiki/Expanded_Main_Page)
