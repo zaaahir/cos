@@ -25,56 +25,104 @@ This project aims to investigate the process of creating an operating system tha
 
 These are checkboxes, but I will probably only review these guidlines at the end to check them off, rather than iteratively during the project. These are mostly for my own reference. 
 
+_Edit: Quoted items are my evalutation on this completed checklist, and a link to evidence._
+
 ### cOS Kernel
 
 - [x] - The kernel boots successfully.
   - [x] - The kernel boots on x86-64 compatible machines.
-  - [x] - The kernel is bootable by any Multiboot-2 compliant bootloader. 
+  - [x] - The kernel is bootable by any Multiboot-2 compliant bootloader.
+
+  > The kernel boots successfully across different virtualisation software. As a result, it should also work on physical hardware, although I have not tested this. This is also demonstrated in testing by test 1.1.
+  
 - [x] - The kernel can parse a Multiboot-2 header.
+
+  > This is demonstrated by being able to detect physical memory by reading the header, as in test 1.2. Certain fields however are not explicitly parsed, and the length of physical memory is assumed to be equal to the end memory address of physical memory.
+
 - [x] - The kernel sets up paging.
   - [x] - 4-level paging
+
+> Paging is functional and the whole of physical memory is mapped into the main address space. The kernel exposes a simple interface for applications to map virtual pages to physical pages or allocate virtual pages. It also handles page faults for user-space programs by copying pages from the main address space into the user-space address space if available. Tests 1.3 and 1.5 verify that the paging structures are properly set up.
+
 - [x] - The kernel can load a Multiboot-2 module.
+
+> The initial ramdisk is loaded as a module and the physical pages are protected from being overwritten. The kernel also maps the module into the address space at a fixed address. It can currently only use a single module; however, it still prevents other modules from being overwritten in memory.
+      
 - [x] - The kernel sets up x86-64 specific structures:
   - [x] - A Global Descriptor Table (GDT)
   - [x] - A Task State Segment (TSS)
   - [x] - An Interrupt Descriptor Table (IDT)
+
+    > The Global Descriptor Table and Task State Segment are both managed and set up by the kernel. The Global Descriptor Table contains entries for different protection levels; ring 0 and ring 3. This helps protect the operating system from malicious or buggy user-space programs. Ring 1 and 2 could possibly be used for device drivers as to allow less protection than user-space but more protection than running at kernel level. These have been checked by tests 1.4 and 1.6. 
 - [x] - The kernel enters long mode.
+
+> The kernel jumps to a higher half 64-bit address which is where 64-bit code begins execution.
+> 
 - [x] - The kernel loads an initrd.
+
+> The initrd is loaded from a Multiboot-2 module. It is in the form of a Unix Standard TAR file which is parsed and accessible from the virtual filesystem. Tests 2.4 and 2.5 demonstrate this. System files and drivers can be included in the initrd. The TAR file is uncompressed so it may be worth using a compressible format to reduce image sizes.
+
 - [x] - The initrd is loaded as a Multiboot-2 module.
 - [x] - The initrd is a Unix Standard TAR file.
 - [x] - The kernel initialises interrupts.
+
+> The Interrupt Descriptor Table is set up to call a custom interrupt handler, as verified in test 1.6. This uses virtual functions to find a relevant interrupt handler and call it. As a result, device drivers can easily handle interrupts by inheriting from the interrupt handler class. The Programmable Interrupt Controller (PIC) has also been set up as verified in test 1.7, and hardware interrupts are received in test 1.8. In the future, the Advanced Programmable Interrupt Controller (APIC) could be used to allow for multi-processor interrupt routing.
+
 - [x] - The kernel initialises the Programmable Interval Timer (PIT).
+
+> The PIT provides a global timer that is used for processes to sleep for a certain number of milliseconds. The interrupt itself is used to check if tasks can be switched and allows us to interrupt a malfunctioning program. Higher precision timers could be used to gain an even better global timer.
+
 - [x] - The kernel initialises a kernel heap that can allocate and free arbitrarily sized buffers.
   - [x] - It must be able to supply word-aligned allocations.
+
+  > The heap allocator works effectively and has been tested. It is used extensively in the kernel and therefore it is crucial that it is performant. The use of a binary search tree over a regular list of free allocations significantly improves performance. Rebalancing the binary search tree would likely further increase performance.
+
 - [x] - The kernel initialises a scheduler that can switch between kernel tasks.
   - [x] - The kernel must also provide a mechanism to switch to user mode. (ring 3)
+
+  > Task switching uses interrupt stacks to store the state of an interrupted task and restore state when resuming the task. The task switching is able to switch between kernel and user-space processes efficiently. In addition, the scheduler chooses which task should run next using a priority-based system. This has been tested in tests 4.1 through 4.6. Alternative scheduler designs might lead to a fairer and more performant scheduler.
+  
 - [x] - The kernel detects devices on Peripheral Component Interconnect (PCI) buses.
   - [x] - The kernel provides the ability to search for and configure devices on PCI buses.
+
+  > All devices were detected in test 2.3. The network driver also configures the network card on the PCI bus successfully.
 
 ### cOS filesystem layer
 
 - [x] - The layer provides an interface for multiple filesystems mounted in a single virtual filesystem.
   - [x] - It provides an implementation for a driver for the USTAR tar file format.
+
+  > The virtual filesystem can easily mount new filesystems with a simple interface. It can abstract file operations on a tree structure regardless of the underlying structure of the file. This is seen in the flat TAR file being mapped into a tree of file and directory nodes.
+
 - [x] - The layer provides `read` and `write` interfaces for filesystem drivers.
+
+> Filesystem drivers only need to provide a single interface to be mountable in the virtual filesystem. This also means that drivers for other operating systems can easily be ported and executed. 
 
 ### cOS networking layer
 
 - [x] - The kernel can provide networking services.
-  - [ ] - It provides an adaptable interface for different network card drivers.
-    - [ ] - It provides an implementation for the AMD Am79C973 network card.
-  - [ ] - It provides an interface for sending and receiving Ethernet frames.
-  - [ ] - It provides an interface for sending and receiving Address Resolution Protocol (ARP) messages.
-  - [ ] - It provides an interface for handling Internet Protocol v4 (IPv4) messages.
-  - [ ] - It provides an interface for sending and receiving Internet Control Message Protocol (ICMP) messages.
-  - [ ] - It provides an interface for sending and receiving User Datagram Protocol (UDP) messages.
-  - [ ] - It provides an interface for sending and receiving Transmission Control Protocol (TCP) messages.
-    - [ ] - It supports reordering of received packets.
-    - [ ] - It supports acknowledgment and retransmission of missed packets.
+  - [x] - It provides an adaptable interface for different network card drivers.
+    - [x] - It provides an implementation for the AMD Am79C973 network card.
+  - [x] - It provides an interface for sending and receiving Ethernet frames.
+  - [x] - It provides an interface for sending and receiving Address Resolution Protocol (ARP) messages.
+  - [x] - It provides an interface for handling Internet Protocol v4 (IPv4) messages.
+  - [x] - It provides an interface for sending and receiving Internet Control Message Protocol (ICMP) messages.
+  - [x] - It provides an interface for sending and receiving User Datagram Protocol (UDP) messages.
+  - [x] - It provides an interface for sending and receiving Transmission Control Protocol (TCP) messages.
+    - [x] - It supports reordering of received packets.
+    - [x] - It supports acknowledgment and retransmission of missed packets.
+       
+  > The networking stack is very functional and provides a TCP/IP implementation with support for sockets. It exposes hardware-level communication as well as higher-level socket communication. It even allows for accessing the Internet through HTTP, which is a very complex procedure. Tests 3.1 to 3.8 all passed and demonstrated the strength and compliance of the networking stack. It would be useful to port an SSL/TLS library so that HTTPS can be used to access modern websites. Making the network stack multi-threaded with queues would also be valuable, especially for server applications. 
 
 ### cOS user-space
 
-- [ ] - The kernel can load ELF executables into an address space for a newly created task.
-- [ ] - The kernel provides a system calls interface to send data to the kernel.
+- [x] - The kernel can load ELF executables into an address space for a newly created task.
+
+> This has been demonstrated with test 4.4. Static ELF executables can be completely loaded in and executed in accordance with the ELF specification. Relocatable ELF executables are not currently supported.
+
+- [x] - The kernel provides a system calls interface to send data to the kernel.
+
+> This uses the built-in `syscall` instruction, storing arguments in registers. This is very fast as it avoids some of the overhead of interrupts. Currently there are not many system calls available. Care must be taken to ensure all data coming from user-space is treated as untrustworthy and scrutinised with defensive programming.
 
 ## Design
 
@@ -1084,17 +1132,11 @@ auto file = Filesystem::VirtualFilesystemManager::instance().open_file("initrd/d
 ```cpp
 auto eventDescriptor = Events::EventDispatcher::instance().register_event_listener(Task::TaskManager::instance().get_current_task(), "HID/Keyboard", 0); 
     while (1) 
-
     { 
-
         Events::EventDispatcher::instance().block_event_listen(Task::TaskManager::instance().get_current_task(), eventDescriptor); 
-
         auto scanCode = (uint8_t)Events::EventDispatcher::instance().read_from_event_queue(Task::TaskManager::instance().get_current_task(), eventDescriptor); 
-
         printf("Scan code received: "); 
-
         printf(scanCode); 
-
         printf("\n");
     }
 ```
@@ -1123,9 +1165,443 @@ AMDPCNETIIIDriver.send_data((uint8_t*)"Hello network!", 14);
 </p>
 
 
+<p align="center">
+<img width="700" alt="Screenshot 2024-08-19 at 11 31 53" src="https://github.com/user-attachments/assets/02d872e4-1a05-4dd2-94fb-4574baaa0e40" alt="Screenshot of Wireshark showing a compliant Ethernet II frame with the payload “Hello network!” transmitted on the network for test 3.2. ">
+</p>
+
+<p align="center">
+<i>Screenshot of Wireshark showing a compliant Ethernet II frame with the payload<br>
+  “Hello network!” transmitted on the network for test 3.2.  </i>
+</p>
+
+```cpp
+// The MAC destination is set to 0xFFFFFFFFFFFF for a broadcast message. 
+Networking::Ethernet::EthernetLayerManager::instance()->send_data(0xFFFFFFFFFFFF, 0, (uint8_t*)"Hello network!", 14); 
+```
+
+<p align="center">
+<i>Kernel code used to transmit Ethernet II frame on network for test 3.2. </i>
+</p>
+
+<p align="center">
+<img width="700" alt="Screenshot 2024-08-19 at 11 31 53" src="https://github.com/user-attachments/assets/24bf0d47-d064-4cb9-bcab-c5b938c2b785" alt="Screenshot of getting the MAC address for the gateway IP 10.0.0.2 for test 3.3. ">
+</p>
+
+<p align="center">
+<i>Screenshot of getting the MAC address for the gateway IP 10.0.0.2 for test 3.3. </i>
+</p>
+
+<p align="center">
+<img width="700" alt="Screenshot 2024-08-19 at 11 31 53" src="https://github.com/user-attachments/assets/cca26e6b-2b9e-4574-a27a-7cb5523f7729" alt="Screenshot of Wireshark showing compliant ARP request sent by the kernel and a response which is processed and cached for test 3.3. ">
+</p>
+
+<p align="center">
+<i>Screenshot of Wireshark showing compliant ARP request sent by the kernel and a<br> response which is processed and cached for test 3.3.  </i>
+</p>
+
+```cpp
+// Gateway IP. 
+
+uint8_t gip1 = 10, gip2 = 0, gip3 = 2, gip4 = 2; 
+
+// Gateway IP big endian. 
+
+uint32_t gip_be = ((uint32_t)gip4 << 24) 
+
+                | ((uint32_t)gip3 << 16) 
+
+                | ((uint32_t)gip2 << 8) 
+
+                | (uint32_t)gip1;
+                uint64_t MACAddress = 0; 
+
+Networking::AddressResolutionProtocol::AddressResolutionProtocolManager::instance()->send_ARP_request(gip_be); 
+
+while (!MACAddress) 
+
+{ 
+
+    MACAddress = Networking::AddressResolutionProtocol::AddressResolutionProtocolManager::instance()->find_cached_IP_address(gip_be); 
+
+} 
+
+printf("MAC address (big endian): "); 
+
+printf(MACAddress); 
+```
+
+<p align="center">
+<i>Kernel code used to resolve gateway IP address using ARP for test 3.3. </i>
+</p>
+
+<p align="center">
+<img width="700" alt="Screenshot 2024-08-19 at 11 31 53" src="https://github.com/user-attachments/assets/202c7728-3db9-4442-85e1-644a2df6c729" alt="Screenshot of Wireshark showing a compliant IPv4 packet transmitted (other than protocol type) for test 3.4.  ">
+</p>
+
+<p align="center">
+<i>Screenshot of Wireshark showing a compliant IPv4 packet transmitted <br> (other than protocol type) for test 3.4. </i>
+</p>
+
+```cpp
+uint8_t gip1 = 10, gip2 = 0, gip3 = 2, gip4 = 2; 
+
+uint32_t gip_be = ((uint32_t)gip4 << 24) 
+
+                | ((uint32_t)gip3 << 16) 
+
+                | ((uint32_t)gip2 << 8) 
+
+                | (uint32_t)gip1; 
+
+Networking::InternetProtocolV4::InternetProtocolManager::instance()->send_data(gip_be, 0x0, (uint8_t*)"Hello network!", 14); 
+```
+
+<p align="center">
+<i>Kernel code used to send IPv4 packet for test 3.4. </i>
+</p>
+
+<p align="center">
+<img width="700" alt="Screenshot 2024-08-19 at 11 31 53" src="https://github.com/user-attachments/assets/f879e58e-9435-4406-81fd-49dc1b4bb040" alt="Screenshot of Wireshark showing a compliant UDP packet transmitted for test 3.5. ">
+</p>
+
+<p align="center">
+<i>Screenshot of Wireshark showing a compliant UDP packet transmitted for test 3.5.  </i>
+</p>
+
+```cpp
+uint8_t gip1 = 10, gip2 = 0, gip3 = 2, gip4 = 2; 
+
+uint32_t gip_be = ((uint32_t)gip4 << 24) 
+
+                | ((uint32_t)gip3 << 16) 
+
+                | ((uint32_t)gip2 << 8) 
+
+                | (uint32_t)gip1; 
+
+auto socket = udpManager->connect(gip_be, 1234); 
+
+udpManager->send(socket, (uint8_t*)"Hello network!", 14); 
+```
+
+<p align="center">
+<i>Kernel code used to transmit UDP packet for test 3.5.  </i>
+</p>
+
+<p align="center">
+<img width="700" alt="Screenshot 2024-08-19 at 11 31 53" src="https://github.com/user-attachments/assets/9f44d1dc-637e-472b-b34e-bd58f7de7bb2" alt="Screenshot of Wireshark showing a compliant UDP packet being received for test 3.6.  ">
+</p>
+
+<p align="center">
+<i>Screenshot of Wireshark showing a compliant UDP packet being received for test 3.6.   </i>
+</p>
+
+```cpp
+auto socket = udpManager->listen(1234); 
+```
+
+<p align="center">
+<i>Kernel code used to receive UDP packet for test 3.6.  </i>
+</p>
+
+<p align="center">
+<img width="700" alt="Screenshot 2024-08-19 at 11 31 53" src="https://github.com/user-attachments/assets/1f135782-8240-481f-9c64-46beee7b9322" alt="Screenshot of Wireshark showing a compliant TCP connection when connecting to a remote endpoint for test 3.7. ">
+</p>
+
+<p align="center">
+<i>Screenshot of Wireshark showing a compliant TCP connection when connecting<br> to a remote endpoint for test 3.7. </i>
+</p>
 
 
+```cpp
+uint8_t gip1 = 10, gip2 = 0, gip3 = 2, gip4 = 2; 
 
+uint32_t gip_be = ((uint32_t)gip4 << 24) 
+
+                | ((uint32_t)gip3 << 16) 
+
+                | ((uint32_t)gip2 << 8) 
+
+                | (uint32_t)gip1; 
+
+auto socket = tcpManager->connect(gip_be, 1234); 
+
+while (socket->m_state != Networking::TransmissionControlProtocol::TransmissionControlProtocolSocket::State::ESTABLISHED) {} 
+
+socket->send((uint8_t*)"Hello network!", 14); 
+```
+
+<p align="center">
+<i>Kernel code used to connect to a remote TCP endpoint for test 3.7. </i>
+</p>
+
+<p align="center">
+<img width="700" alt="Screenshot 2024-08-19 at 11 31 53" src="https://github.com/user-attachments/assets/48a71b0a-bf22-4c53-8be1-78b9584c015d" alt="Screenshot of Wireshark showing a compliant HTTP POST request sent for test 3.8.  ">
+</p>
+
+<p align="center">
+<i>Screenshot of Wireshark showing a compliant HTTP POST request sent for test 3.8.  </i>
+</p>
+
+```cpp
+uint8_t gip1 = 10, gip2 = 0, gip3 = 2, gip4 = 2; 
+
+uint32_t gip_be = ((uint32_t)gip4 << 24) 
+
+                | ((uint32_t)gip3 << 16) 
+
+                | ((uint32_t)gip2 << 8) 
+
+                | (uint32_t)gip1; 
+
+auto socket = tcpManager->connect(gip_be, 3939); 
+
+while (socket->m_state != Networking::TransmissionControlProtocol::TransmissionControlProtocolSocket::State::ESTABLISHED) {} 
+
+socket-> send((uint8_t*)"POST /d493159e-39a2-4015-a5b7-cfcc05a9d739 HTTP/1.1\nHost: webhook.site\nAccept: application/json\nContent-Type: application/json\nContent-Length: 15\n\n{\"test\":\"data\"}", 163); 
+```
+
+<p align="center">
+<i>Kernel code used to connect to a remote TCP endpoint for test 3.8.   </i>
+</p>
+
+<p align="center">
+<img width="700" alt="Screenshot 2024-08-19 at 11 31 53" src="https://github.com/user-attachments/assets/56bc1af3-c8ec-44fa-b9c0-6c4279c1222d" alt="Screenshot of kernel running multiple tasks for test 4.1.">
+</p>
+
+<p align="center">
+<i>Screenshot of kernel running multiple tasks for test 4.1.  </i>
+</p>
+
+```cpp
+void task_one() 
+{ 
+    printf("Task one\n"); 
+    while (1); 
+} 
+
+void task_two() 
+{ 
+    printf("Task two\n"); 
+    while (1); 
+} 
+
+void task_three() 
+{ 
+    printf("Task three\n"); 
+    while (1); 
+} 
+
+void task_four() 
+{ 
+    printf("Task four\n"); 
+    while (1); 
+} 
+
+auto task1 = Task::TaskManager::instance().create_new_kernel_task(); 
+task1.set_entry_point((void*)& task_one); 
+auto task2 = Task::TaskManager::instance().create_new_kernel_task(); 
+task2.set_entry_point((void*)& task_two); 
+auto task3 = Task::TaskManager::instance().create_new_kernel_task(); 
+task3.set_entry_point((void*)& task_three); 
+auto task4 = Task::TaskManager::instance().create_new_kernel_task(); 
+task4.set_entry_point((void*)& task_four); 
+
+Task::TaskManager::instance().add_task(task1); 
+Task::TaskManager::instance().add_task(task2); 
+Task::TaskManager::instance().add_task(task3); 
+Task::TaskManager::instance().add_task(task4); 
+Task::TaskManager::instance().run();
+```
+
+<p align="center">
+<i>Kernel code to run multiple tasks for test 4.1. </i>
+</p>
+
+<p align="center">
+<img width="700" alt="Screenshot 2024-08-19 at 11 31 53" src="https://github.com/user-attachments/assets/42d2914d-a414-4afa-888b-2989269b3330" alt="Screenshot of kernel running different priority tasks for test 4.2. ">
+</p>
+
+<p align="center">
+<i>Screenshot of kernel running different priority tasks for test 4.2. </i>
+</p>
+
+
+```cpp
+void task_one() 
+{ 
+    printf("Task one\n"); 
+    while (1); 
+}  
+
+void task_two() 
+{ 
+    printf("Task two\n"); 
+    while (1); 
+} 
+
+
+void task_three() 
+{ 
+    printf("Task three\n"); 
+    while (1); 
+} 
+
+void task_four() 
+{ 
+    printf("Task four\n"); 
+    while (1);
+} 
+
+
+auto task1 = Task::TaskManager::instance().create_new_kernel_task(600); 
+task1.set_entry_point((void*)& task_one); 
+auto task2 = Task::TaskManager::instance().create_new_kernel_task(270); 
+task2.set_entry_point((void*)& task_two); 
+auto task3 = Task::TaskManager::instance().create_new_kernel_task(23); 
+task3.set_entry_point((void*)& task_three); 
+auto task4 = Task::TaskManager::instance().create_new_kernel_task(512); 
+task4.set_entry_point((void*)& task_four); 
+
+Task::TaskManager::instance().add_task(task1);
+Task::TaskManager::instance().add_task(task2); 
+Task::TaskManager::instance().add_task(task3); 
+Task::TaskManager::instance().add_task(task4); 
+Task::TaskManager::instance().run();
+```
+
+<p align="center">
+<i>Kernel code to run multiple tasks for test 4.2.  </i>
+</p>
+
+<p align="center">
+<img width="700" alt="Screenshot 2024-08-19 at 11 31 53" src="https://github.com/user-attachments/assets/1fbbbaa7-9b65-4476-b18a-7440c4d92a81" alt="Screenshot of kernel receiving keyboard interrupts as all tasks block for test 4.3. ">
+</p>
+
+<p align="center">
+<i>Screenshot of kernel receiving keyboard interrupts as all tasks block for test 4.3.  </i>
+</p>
+
+```cpp
+void task_one() 
+{ 
+    printf("Task one\n"); 
+    Task::TaskManager::instance().block_task(); 
+} 
+
+void task_two() 
+{ 
+    printf("Task two\n"); 
+    Task::TaskManager::instance().block_task(); 
+} 
+
+void task_three() 
+{ 
+    printf("Task three\n"); 
+    Task::TaskManager::instance().block_task(); 
+} 
+
+void task_four() 
+{ 
+    printf("Task four\n"); 
+    Task::TaskManager::instance().block_task(); 
+} 
+
+auto task1 = Task::TaskManager::instance().create_new_kernel_task(600); 
+task1.set_entry_point((void*)& task_one); 
+auto task2 = Task::TaskManager::instance().create_new_kernel_task(270); 
+task2.set_entry_point((void*)& task_two); 
+auto task3 = Task::TaskManager::instance().create_new_kernel_task(23); 
+task3.set_entry_point((void*)& task_three); 
+auto task4 = Task::TaskManager::instance().create_new_kernel_task(512); 
+task4.set_entry_point((void*)& task_four); 
+
+Task::TaskManager::instance().add_task(task1); 
+Task::TaskManager::instance().add_task(task2); 
+Task::TaskManager::instance().add_task(task3); 
+Task::TaskManager::instance().add_task(task4); 
+Task::TaskManager::instance().run(); 
+```
+
+<p align="center">
+<i>Kernel code to run multiple tasks for test 4.3.  </i>
+</p>
+
+<p align="center">
+<img width="700" alt="Screenshot 2024-08-19 at 11 31 53" src="https://github.com/user-attachments/assets/9d397584-3f93-4ae1-9c9a-e0471ce95099" alt="Screenshot of user-space program executing a system call for test 4.4. ">
+</p>
+
+<p align="center">
+<i>Screenshot of user-space program executing a system call for test 4.4.  </i>
+</p>
+
+```cpp
+void elf_task() 
+{ 
+    Task::TaskManager::instance().lock(); 
+    auto currentTask = Task::TaskManager::instance().get_current_task_pointer(); 
+    Loader::prepare_elf("initrd/userspaceProgram", currentTask); 
+    auto entryPoint = currentTask->get_entry_point(); 
+    Task::TaskManager::instance().unlock(); 
+    start_userspace_task_sysret((uint64_t)entryPoint, (uint64_t)(currentTask->get_kstack())); 
+
+} 
+```
+
+<p align="center">
+<i>Kernel code to load ELF executable and run in user-space for test 4.4. </i>
+</p>
+
+```cpp
+void _start() 
+{ 
+    syscall(SYSCALL_DPRINTF, (uint64_t)"Hello from userspace!"); 
+    while(1); 
+} 
+```
+
+<p align="center">
+<i>ELF executable source code for test 4.4. </i>
+</p>
+
+```cpp
+void _start() 
+{ 
+    asm volatile ("cli"); 
+    while (1); 
+}
+```
+
+<p align="center">
+<i>ELF executable source code that causes General Protection<br> Fault for test 4.5.  </i>
+</p>
+
+```cpp
+void task_one() 
+{ 
+    while (1) 
+    { 
+        printf("Task one. "); 
+        Task::TaskManager::instance().sleep_for(1000); 
+    } 
+} 
+```
+
+<p align="center">
+<i>Kernel code that prints to screen roughly every second for test 4.6.</i>
+</p>
+
+## Potential Improvements 
+
+I have a few ideas on potential improvements to this project from my own reflection, which I will now discuss. 
+
+- **Graphical User Interface (GUI)**: Providing a GUI would massively improve how users interact with the operating system. Currently, there is virtually no interactivity other than loading different programs. Using modern HD graphics would be ideal, however this would require implementing graphics drivers for each graphics card and this is infeasible. Instead, implementing HD graphics for the VMWare SVGA II card, which is a virtual graphics card that is available in most virtual machines, would likely be more than sufficient for people using an educational operating system.
+
+- **Multiple Processors**: Modern operating systems utilise multiple processors (or cores) to execute processes or threads simultaneously as opposed to only using pre-emptive task switching. Implementing this may require a redesign of the scheduler and interrupts. However, locking primitives such as the spinlock are already functional with multiple processors, making much of the kernel and its data structures ready for multiple processors. This could be implemented with Symmetric Multiprocessing (SMP).
+
+- **Improving system calls and porting a C library**: The system calls act as an interface between the user-space and the kernel, where the user-space can request services. Increasing the number of system calls means that user-space programs can provide more functionality. For example, a common system call is the mmap call which is used to map memory. With enough system calls, a C library can be ported that abstracts the system calls, leaving user-space programs to use the standardised C library.
+
+- **Custom bootloader**: At the moment, we use the GRUB bootloader to load the operating system and Multiboot-2 modules into memory. However this restricts the design of how the kernel boots and makes us reliant on the bootloader. With a custom bootloader, we would have complete control over how our operating system is loaded and we could write a custom installer for our operating system.
 
 
 ## Resources
