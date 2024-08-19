@@ -72,3 +72,75 @@ namespace Task
         }
         else
         {
+            // Update kernel stack pointer but add the size of the iretq stack as this will be popped.
+            CPU::update_kernel_stack_pointer(reinterpret_cast<void*>(reinterpret_cast<uint64_t>(task->get_kstack()) + SIZE_OF_IRETQ_STACK));
+            auto tlTable = (uint64_t*)((*(task->m_tlTable)).get_physical_address().get());
+            m_spinlock.release();
+            return_to_task(tlTable);
+        }
+    }
+
+    void TaskManager::add_task(Task task)
+    {
+        m_spinlock.acquire();
+        m_scheduler->add_task(task);
+        m_spinlock.release();
+    }
+
+    void TaskManager::pit_tick()
+    {
+        send_pit_eoi();
+        auto currentTime = CPU::PIT::time_since_boot();
+
+        // Check for sleeping tasks and unblock any that have slept for the correct amount of time.
+        while (TaskManager::instance().m_sleepingTasks.size() > 0)
+        {
+            auto task = TaskManager::instance().m_sleepingTasks.top();
+            if (currentTime >= task.wakeTime)
+            {
+                TaskManager::instance().m_sleepingTasks.pop();
+                TaskManager::instance().unblock_task(task.task);
+            }
+            else
+                break;
+        }
+        // If the scheduler is already changing task, let the scheduler refresh.
+        if (TaskManager::instance().is_scheduler_changing_task())
+            return;
+        TaskManager::instance().refresh();
+    }
+
+    void TaskManager::sleep_for(uint64_t duration)
+    {
+        auto currentTime = CPU::PIT::time_since_boot();
+        TaskManager::instance().sleep_until(currentTime + duration);
+    }
+
+    void TaskManager::sleep_until(uint64_t time)
+    {
+        m_spinlock.acquire();
+        auto currentTime = CPU::PIT::time_since_boot();
+        if (currentTime >= time)
+        {
+            m_spinlock.release();
+            return;
+        }
+
+        SleepingTask sleepingTask;
+        sleepingTask.task = get_current_task();
+        sleepingTask.wakeTime = time;
+        // Add sleeping task to list of sleeping tasks that is checked on every timer interrupt.
+        m_sleepingTasks.push(sleepingTask);
+        block_task();
+    }
+
+    void TaskManager::refresh()
+    {
+        if (!TaskManager::instance().is_spinlock_acquired()) { TaskManager::instance().m_spinlock.acquire(); }
+
+        TaskManager::instance().m_schedulerChangingTask = true;
+        TaskManager::instance().m_scheduler->move_to_next_task(TaskManager::instance().m_spinlock);
+        TaskManager::instance().m_schedulerChangingTask = false;
+        auto currentTask = TaskManager::instance().m_scheduler->get_current_task();
+        TaskManager::instance().switch_to_task(TaskManager::instance().m_scheduler->get_task_from_tid(currentTask));
+    }
