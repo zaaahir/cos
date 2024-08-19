@@ -144,3 +144,101 @@ namespace Task
         auto currentTask = TaskManager::instance().m_scheduler->get_current_task();
         TaskManager::instance().switch_to_task(TaskManager::instance().m_scheduler->get_task_from_tid(currentTask));
     }
+
+    void TaskManager::run()
+    {
+        m_spinlock.acquire();
+        m_schedulerChangingTask = true;
+        m_scheduler->move_to_next_task(m_spinlock);
+        m_schedulerChangingTask = false;
+        m_isActive = true;
+        switch_to_task(m_scheduler->get_task_from_tid(m_scheduler->get_current_task()));
+    }
+
+    uint64_t* TaskManager::get_safe_stack() { return reinterpret_cast<uint64_t*>(START_OF_PROCESS_KSTACKS + 0x1000); }
+
+    void TaskManager::save_kstack(void* kstack)
+    {
+        TaskManager::instance().m_spinlock.acquire();
+        TaskManager::instance().m_scheduler->get_task_from_tid(TaskManager::instance().m_scheduler->get_current_task())->set_kstack(kstack);
+        TaskManager::instance().m_spinlock.release();
+    }
+
+    void TaskManager::save_kstack_with_tid(void* kstack, TaskID tid)
+    {
+        TaskManager::instance().m_spinlock.acquire();
+        TaskManager::instance().m_scheduler->get_task_from_tid(tid)->set_kstack(kstack);
+        TaskManager::instance().m_spinlock.release();
+    }
+
+    uint64_t* TaskManager::get_current_stack() {
+        TaskManager::instance().m_spinlock.acquire();
+        auto kstack = reinterpret_cast<uint64_t*>(TaskManager::instance().m_scheduler->get_task_from_tid(TaskManager::instance().m_scheduler->get_current_task())->get_kstack());
+        TaskManager::instance().m_spinlock.release();
+        return kstack;
+    }
+
+    bool TaskManager::is_executing()
+    {
+        return m_isActive;
+    }
+
+    bool TaskManager::is_spinlock_acquired()
+    {
+        return TaskManager::instance().m_spinlock.is_acquired();
+    }
+
+    bool TaskManager::is_scheduler_changing_task()
+    {
+        return TaskManager::instance().m_schedulerChangingTask;
+    }
+
+    void TaskManager::block_task()
+    {
+        if (!is_spinlock_acquired()) { m_spinlock.acquire(); }
+        auto currentTask = m_scheduler->get_current_task();
+        m_scheduler->block_task();
+        m_spinlock.release();
+        block_task_and_refresh(currentTask);
+    }
+
+    void TaskManager::unblock_task(TaskID taskID)
+    {
+        m_spinlock.acquire();
+        m_scheduler->unblock_task(taskID);
+        m_spinlock.release();
+    }
+
+    void TaskManager::terminate_task()
+    {
+        if (!m_isActive) { return; }
+        TaskManager::instance().block_task();
+    }
+
+    uint64_t TaskManager::add_ed(void* eventSender, void* param, TaskID taskID)
+    {
+        m_spinlock.acquire();
+        auto task = m_scheduler->get_task_from_tid(taskID);
+        Events::EventDescriptor tasked;
+        tasked.eventSender = eventSender;
+        tasked.param = param;
+        tasked.process = (void*)taskID;
+        auto edNumber = (*task->m_openEventDescriptors).insert(tasked)->first;
+        m_spinlock.release();
+        return edNumber;
+    }
+
+    Common::DoublyLinkedListIterator<Common::Pair<uint64_t, Events::EventDescriptor>> TaskManager::get_ed(uint64_t ped, TaskID tid)
+    {
+        auto task = m_scheduler->get_task_from_tid(tid);
+        return (*task->m_openEventDescriptors).get(ped);
+    }
+
+    void TaskManager::remove_ed(uint64_t ed, TaskID taskID)
+    {
+        m_spinlock.acquire();
+        auto task = m_scheduler->get_task_from_tid(taskID);
+        (*task->m_openEventDescriptors).remove(ed);
+        m_spinlock.release();
+    }
+}
