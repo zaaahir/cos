@@ -1,4 +1,4 @@
-# cOS
+# cOS - A Modern Operating System
 
 ## Background
 
@@ -27,29 +27,29 @@ These are checkboxes, but I will probably only review these guidlines at the end
 
 ### cOS Kernel
 
-- [ ] - The kernel boots successfully.
-  - [ ] - The kernel boots on x86-64 compatible machines.
-  - [ ] - The kernel is bootable by any Multiboot-2 compliant bootloader. 
-- [ ] - The kernel can parse a Multiboot-2 header.
-- [ ] - The kernel sets up paging.
-  - [ ] - 4-level paging
-- [ ] - The kernel can load a Multiboot-2 module.
-- [ ] - The kernel sets up x86-64 specific structures:
-  - [ ] - A Global Descriptor Table (GDT)
-  - [ ] - A Task State Segment (TSS)
-  - [ ] - An Interrupt Descriptor Table (IDT)
-- [ ] - The kernel enters long mode.
-- [ ] - The kernel loads an initrd.
-- [ ] - The initrd is loaded as a Multiboot-2 module.
-- [ ] - The initrd is a Unix Standard TAR file.
-- [ ] - The kernel initialises interrupts.
-- [ ] - The kernel initialises the Programmable Interval Timer (PIT).
-- [ ] - The kernel initialises a kernel heap that can allocate and free arbitrarily sized buffers.
-  - [ ] - It must be able to supply word-aligned allocations.
-- [ ] - The kernel initialises a scheduler that can switch between kernel tasks.
-  - [ ] - The kernel must also provide a mechanism to switch to user mode. (ring 3)
-- [ ] - The kernel detects devices on Peripheral Component Interconnect (PCI) buses.
-  - [ ] - The kernel provides the ability to search for and configure devices on PCI buses.
+- [x] - The kernel boots successfully.
+  - [x] - The kernel boots on x86-64 compatible machines.
+  - [x] - The kernel is bootable by any Multiboot-2 compliant bootloader. 
+- [x] - The kernel can parse a Multiboot-2 header.
+- [x] - The kernel sets up paging.
+  - [x] - 4-level paging
+- [x] - The kernel can load a Multiboot-2 module.
+- [x] - The kernel sets up x86-64 specific structures:
+  - [x] - A Global Descriptor Table (GDT)
+  - [x] - A Task State Segment (TSS)
+  - [x] - An Interrupt Descriptor Table (IDT)
+- [x] - The kernel enters long mode.
+- [x] - The kernel loads an initrd.
+- [x] - The initrd is loaded as a Multiboot-2 module.
+- [x] - The initrd is a Unix Standard TAR file.
+- [x] - The kernel initialises interrupts.
+- [x] - The kernel initialises the Programmable Interval Timer (PIT).
+- [x] - The kernel initialises a kernel heap that can allocate and free arbitrarily sized buffers.
+  - [x] - It must be able to supply word-aligned allocations.
+- [x] - The kernel initialises a scheduler that can switch between kernel tasks.
+  - [x] - The kernel must also provide a mechanism to switch to user mode. (ring 3)
+- [x] - The kernel detects devices on Peripheral Component Interconnect (PCI) buses.
+  - [x] - The kernel provides the ability to search for and configure devices on PCI buses.
 
 ### cOS filesystem layer
 
@@ -100,8 +100,9 @@ We show hierarchy charts for each part of the operating system, followed by a ta
 
 ### Kernel
 
+<p align="center">
 <img width="447" alt="Screenshot 2024-08-13 at 14 39 05" src="https://github.com/user-attachments/assets/8eccf38c-bcb2-4405-a1cf-d1a42cd6d523" style="display: block; margin-left: auto; margin-right: auto;">
-
+</p>
 
 
 <table>
@@ -279,7 +280,10 @@ We show hierarchy charts for each part of the operating system, followed by a ta
 
 ### Filesystem Layer
 
+<p align="center">
 <img width="361" alt="Screenshot 2024-08-13 at 19 36 29" src="https://github.com/user-attachments/assets/ee8300e7-f0a8-44cf-b2f4-0c8023fdfa4e">
+</p>
+
 
 <table>
   <tr>
@@ -332,7 +336,9 @@ We show hierarchy charts for each part of the operating system, followed by a ta
 
 ### Networking layer
 
+<p align="center">
 <img width="421" alt="Screenshot 2024-08-13 at 19 38 45" src="https://github.com/user-attachments/assets/7dd50385-0955-4662-86a7-80b5e0365eb1">
+</p>
 
 <table>
   <tr>
@@ -397,7 +403,9 @@ We show hierarchy charts for each part of the operating system, followed by a ta
 
 ### Internet Protocol v4
 
+<p align="center">
 <img width="385" alt="Screenshot 2024-08-13 at 19 39 10" src="https://github.com/user-attachments/assets/f009305e-a4a4-47ef-b5b1-c7f3a2189397">
+</p>
 
 <table>
   <tr>
@@ -462,7 +470,9 @@ We show hierarchy charts for each part of the operating system, followed by a ta
 
 ### Userspace
 
+<p align="center">
 <img width="302" alt="Screenshot 2024-08-13 at 19 40 38" src="https://github.com/user-attachments/assets/44e92cd0-54cf-4d7f-a9e9-ba026f3dac30">
+</p>
 
 <table>
   <tr>
@@ -735,6 +745,207 @@ To test networking, I will use QEMU’s command line to save a dump of network c
    </td>
   </tr>
 </table>
+
+### Task Management and User-space 
+
+<table>
+  <tr>
+   <td>Test ID 
+   </td>
+   <td>Description 
+   </td>
+   <td>Expected result 
+   </td>
+  </tr>
+  <tr>
+   <td>4.1 
+   </td>
+   <td>Load multiple tasks. Each task should execute. This is tested by running multiple tasks that print to the screen. 
+   </td>
+   <td>Each task prints to the screen.  
+   </td>
+  </tr>
+  <tr>
+   <td>4.2 
+   </td>
+   <td>Load multiple tasks with varying priorities. The tasks should execute in order of priority.  
+   </td>
+   <td>The tasks print in order of priority. 
+   </td>
+  </tr>
+  <tr>
+   <td>4.3 
+   </td>
+   <td>Block all tasks to ensure the kernel continues to run. 
+   </td>
+   <td>The kernel does not crash. 
+   </td>
+  </tr>
+  <tr>
+   <td>4.4 
+   </td>
+   <td>Load an ELF file into an address space and begin executing in userspace. The ELF file should also use the system calls interface. This is tested by compiling a program, loading the binary from the initrd and executing it in userspace. 
+   </td>
+   <td>The program prints to the screen using the system call. 
+   </td>
+  </tr>
+  <tr>
+   <td>4.5 
+   </td>
+   <td>Ensure code is running in user-space by trying to perform a privileged instruction. This is tested by calling the <code>cli</code> instruction which will cause a General Protection Fault. 
+   </td>
+   <td>A General Protection Fault is raised. 
+   </td>
+  </tr>
+  <tr>
+   <td>4.6 
+   </td>
+   <td>Processes should be able to block for a certain number of milliseconds by calling <code>sleep_for</code>. This is tested by having a process print to the screen and then sleeping repeatedly. 
+   </td>
+   <td>The process prints to the screen at a fixed rate. 
+   </td>
+  </tr>
+</table>
+
+
+### Evidence
+
+
+<p align="center">
+<img width="700" alt="Screenshot 2024-08-19 at 11 31 53" src="https://github.com/user-attachments/assets/98eafbec-c08a-42fc-b2cf-54b47a729fd5" alt="Screenshot of QEMU as evidence for test 1.1.">
+</p>
+
+<p align="center">
+<i>Screenshot of QEMU as evidence for test 1.1.</i>
+</p>
+
+
+<p align="center">
+<img width="700" alt="Screenshot 2024-08-19 at 11 31 53" src="https://github.com/user-attachments/assets/23894dce-de67-4ba2-8c36-2f49cbf94c09" alt="Screenshot of memory map as evidence for test 1.2. ">
+</p>
+
+<p align="center">
+<i>Screenshot of memory map as evidence for test 1.2. </i>
+</p>
+
+
+<p align="center">
+<img width="700" alt="Screenshot 2024-08-19 at 11 31 53" src="https://github.com/user-attachments/assets/984673a3-0c72-43d6-8c27-5127d9243fad" alt="Screenshot of accessing the virtual address of the physical address 0x1000 as evidence for test 1.3.  ">
+</p>
+
+<p align="center">
+<i>Screenshot of accessing the virtual address of the physical address 0x1000 as evidence for test 1.3.  </i>
+</p>
+
+<p align="center">
+<img width="700" alt="Screenshot 2024-08-19 at 11 31 53" src="https://github.com/user-attachments/assets/2f492813-2529-4c13-b568-9be97022c0f2" alt="Screenshot of contents of 0x1000 from QEMU monitor as evidence for test 1.3. The xp command returns the content of a physical address. ">
+</p>
+
+<p align="center">
+<i>Screenshot of contents of 0x1000 from QEMU monitor as evidence for test 1.3. <br>
+    The xp command returns the content of a physical address.  </i>
+</p>
+
+```c
+printf("Contents of 0x1000: "); 
+printf(*(uint8_t*)Memory::VirtualAddress(Memory::PhysicalAddress(0x1000)).get()); 
+```
+
+<p align="center">
+<i>Kernel code used to access address for test 1.3.   </i>
+</p>
+
+
+<p align="center">
+<img width="700" alt="Screenshot 2024-08-19 at 11 31 53" src="https://github.com/user-attachments/assets/6a70237d-47e8-4b17-af30-615f6263ecce" alt="Screenshot of registers from QEMU monitor for test 1.4.">
+</p>
+
+<p align="center">
+<i>Screenshot of registers from QEMU monitor for test 1.4. </i>
+</p>
+
+
+
+<p align="center">
+<img width="700" alt="Screenshot 2024-08-19 at 11 31 53" src="https://github.com/user-attachments/assets/d3882b68-49e6-4f2c-847e-be064ef49e95" alt="Screenshot of page fault before allocating page for test 1.5. ">
+</p>
+
+<p align="center">
+<i>Screenshot of page fault before allocating page for test 1.5.  </i>
+</p>
+
+```c
+printf("Value of virtual address 0x1000"); 
+printf(*(uint8_t*)0x1000); 
+```
+
+
+<p align="center">
+<i>Kernel code used to access address and cause page fault for test 1.5.  </i>
+</p>
+
+<p align="center">
+<img width="700" alt="Screenshot 2024-08-19 at 11 31 53" src="https://github.com/user-attachments/assets/7de8f9a5-a2fd-4940-9754-4a372d56f218" alt="Screenshot of no page fault occurring after allocating page for test 1.5. ">
+</p>
+
+<p align="center">
+<i>Screenshot of no page fault occurring after allocating page for test 1.5. </i>
+</p>
+
+```cpp
+Memory::VirtualMemoryAllocationRequest request(Memory::VirtualAddress(0x1000), true, true); 
+Memory::MemoryManager::instance().alloc_page(request); 
+
+printf("Value of virtual address 0x1000: "); 
+
+printf(*(uint8_t*)0x1000); 
+```
+
+<p align="center">
+<i>Kernel code used to allocate page for test 1.5.   </i>
+</p>
+
+
+<p align="center">
+<img width="700" alt="Screenshot 2024-08-19 at 11 31 53" src="https://github.com/user-attachments/assets/059f4333-a3cd-4d7b-b245-9c6334ef49d6" alt="Screenshot of registers from QEMU monitor for test 1.6. ">
+</p>
+
+<p align="center">
+<i>Screenshot of registers from QEMU monitor for test 1.6. </i>
+</p>
+
+<p align="center">
+<img width="700" alt="Screenshot 2024-08-19 at 11 31 53" src="https://github.com/user-attachments/assets/7eb78dc9-7c18-4b8c-841a-872670906350" alt="Screenshot of PIC offsets from QEMU monitor for test 1.7. ">
+</p>
+
+<p align="center">
+<i>Screenshot of PIC offsets from QEMU monitor for test 1.7. </i>
+</p>
+
+<p align="center">
+<img width="700" alt="Screenshot 2024-08-19 at 11 31 53" src="https://github.com/user-attachments/assets/bce971e4-4cb1-413d-a000-0c518180b04e" alt="Screenshot of keyboard scan-codes being printed for test 1.8. ">
+</p>
+
+<p align="center">
+<i>Screenshot of keyboard scan-codes being printed for test 1.8. </i>
+</p>
+
+<p align="center">
+<img width="700" alt="Screenshot 2024-08-19 at 11 31 53" src="https://github.com/user-attachments/assets/31b17980-67a7-4fd0-9497-21083b20287e" alt="Screenshot of page fault occurring by accessing address 4321 for test 1.9. ">
+</p>
+
+<p align="center">
+<i>Screenshot of page fault occurring by accessing address 4321 for test 1.9. </i>
+</p>
+
+```cpp
+printf(*(uint8_t*) 4321); 
+```
+
+<p align="center">
+<i>Kernel code used to access address for test 1.9.  </i>
+</p>
+
 
 ## Resources
 
