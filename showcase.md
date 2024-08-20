@@ -23,7 +23,11 @@ This project aims to investigate the process of creating an operating system tha
 
 ## Project Specification
 
-This is a brief specifications of somme of the features that cOS boasts:
+A decomposition diagram showing mainly how each part of the OS was implemented:
+
+![alt text](https://cloud-mj1nkbe6b-hack-club-bot.vercel.app/0screenshot_2024-08-20_at_10.27.35.png)
+
+This is a brief specifications of some of the features that cOS boasts: 
 
 ### cOS Kernel
 
