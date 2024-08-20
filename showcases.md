@@ -2,6 +2,8 @@
 
 Read [the main README](https://github.com/zaaahir/cos/README.md) for more details on technicals and specifics, this is just a brief overview!
 
+Installation can be done using the Dockerfile. You will need QEMU (the emulator I used) for running locally!
+
 ## Background
 
 I have recently started taking an interest in the low-level implementation details of operating systems for computers. The operating system is system software that manages the computer system and provides services to programs. It consists of a kernel that has full control of the computer system and other loadable modules such as a networking layer.
