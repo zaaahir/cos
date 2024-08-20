@@ -1,4 +1,4 @@
-# cOS - A Modern Operating System
+![](https://cloud-fsj4zugvj-hack-club-bot.vercel.app/0screenshot_2024-08-20_at_10.40.10.png)
 
 Read [the main README](https://github.com/zaaahir/cos/README.md) for more details on technicals and specifics, this is just a brief overview!
 
