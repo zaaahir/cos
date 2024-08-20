@@ -14,18 +14,16 @@ Some of the responsibilities of the kernel include:
 - Setting up architecture-specific structures
 - Loading programs in and out of memory
 
-
 Currently there are only a few mainstream operating systems: Microsoft Windows, macOS and Linux. Each of these operating systems are over 20 years old and are well supported by most commercial software.
-
 
 ## Project Outline
 
 The mainstream operating systems mentioned in the previous section are extremely complex with millions of lines of code and have fixed designs for the sake of backwards compatibility. As a result, these operating systems are not used to teach undergraduate courses. Instead, there are operating systems written to be used in an educational context, such as MINIX and xv6. However, they do not support modern hardware and are often no longer maintained.
-This project aims to investigate the process of creating an operating system that supports modern hardware to help me understand more about computer architectures and operating systems. Other beneficiaries of this project would be university students as they can learn about the mechanisms used by modern operating systems that are not utilised in older educational operating systems.
+This project aims to investigate the process of creating an operating system that supports modern hardware to help me understand more about computer architectures and operating systems. Other beneficiaries of this project would be university students as they can learn about the mechanisms used by modern operating systems that are not utilised in older educational operating systems. I believe this may be the first time such an operating system with networking capabilities has been built in C++. 
 
 ## Project Specification
 
-These are checkboxes, but I will probably only review these guidlines at the end to check them off, rather than iteratively during the project. These are mostly for my own reference. 
+This is a brief specifications of somme of the features that cOS boasts:
 
 ### cOS Kernel
 
@@ -75,6 +73,6 @@ These are checkboxes, but I will probably only review these guidlines at the end
 
 ### cOS user-space
 
-- [ ] - The kernel can load ELF executables into an address space for a newly created task.
-- [ ] - The kernel provides a system calls interface to send data to the kernel.
+ - The kernel can load ELF executables into an address space for a newly created task.
+ - The kernel provides a system calls interface to send data to the kernel.
 
