@@ -13,7 +13,7 @@ Some of the responsibilities of the kernel include:
 - Loading programs in and out of memory
 
 
-Currently there are only a few mainstream operating systems: Microsoft Windows, macOS and Linux. Each of these operating systems are over 20 years old and are well supported by most commercial software.
+Currently there are only a few mainstream operating systems: Microsoft Windows, macOS and Linux. Each of these operating systems are over 20 years old and are well supported by most commercial software. Installation can be done using the Dockerfile. You will need QEMU (the emulator I used) for running locally!
 
 
 ## Project Outline
