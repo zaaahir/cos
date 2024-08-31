@@ -2,6 +2,8 @@
 
 Read [the main README](https://github.com/zaaahir/cos/README.md) for more details on technicals and specifics, this is just a brief overview!
 
+**Made it to Showcase round 3, thank you to everyone who voted! I will be making an indepth guide and running sessions about building your own OS, from scratch, for free! If you have any questions, comments, criticisms, or just want to say hi, my Slack is "@vote cOS for showcase"**
+
 Installation can be done using the Dockerfile. You will need QEMU (the emulator I used) for running locally!
 
 ## Background
