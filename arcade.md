@@ -2,7 +2,7 @@
 
 Read [the main README](https://github.com/zaaahir/cos/README.md) for more details on technicals and specifics, this is just a brief overview!
 
-**Made it to Showcase round 3, thank you to everyone who voted! I will be making an indepth guide and running sessions about building your own OS, from scratch, for free! If you have any questions, comments, criticisms, or just want to say hi, my Slack is "@vote cOS for showcase"**
+**Made it to Showcase round 4 (!!), thank you to everyone who voted! I will be making an indepth guide and running sessions about building your own OS, from scratch, for free! If you have any questions, comments, criticisms, or just want to say hi, my Slack is "@vote cOS for showcase"**
 
 Installation can be done using the Dockerfile. You will need QEMU (the emulator I used) for running locally!
 
@@ -23,7 +23,8 @@ Currently there are only a few mainstream operating systems: Microsoft Windows, 
 ## Project Outline
 
 The mainstream operating systems mentioned in the previous section are extremely complex with millions of lines of code and have fixed designs for the sake of backwards compatibility. As a result, these operating systems are not used to teach undergraduate courses. Instead, there are operating systems written to be used in an educational context, such as MINIX and xv6. However, they do not support modern hardware and are often no longer maintained.
-This project aims to investigate the process of creating an operating system that supports modern hardware to help me understand more about computer architectures and operating systems. Other beneficiaries of this project would be university students as they can learn about the mechanisms used by modern operating systems that are not utilised in older educational operating systems. I believe this may be the first time such an operating system with networking capabilities has been built in C++. 
+
+This project aims to investigate the process of creating an operating system that supports modern hardware to help me understand more about computer architectures and operating systems, by building an OS **completely from scratch**. Other beneficiaries of this project would be university students as they can learn about the mechanisms used by modern operating systems that are not utilised in older educational operating systems. I believe **this is the first time such an operating system with networking capabilities has been built in C++**. 
 
 ## Project Specification
 
