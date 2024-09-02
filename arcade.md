@@ -1,5 +1,7 @@
 ![](https://cloud-fsj4zugvj-hack-club-bot.vercel.app/0screenshot_2024-08-20_at_10.40.10.png)
 
+TLDR: An operating system, built **completely from scratch**, with networking capabilities, the first time this has been done for C++. To be used in universities for teaching networking at the kernel level to undergraduates. Includes a custom scripting language (cScript), and graphics which allow for a GUI (just needs to be pushed), and to come is multiprocessor support using SMP.
+
 Read [the main README](https://github.com/zaaahir/cos/README.md) for more details on technicals and specifics, this is just a brief overview!
 
 **Made it to Showcase round 4 (!!), thank you to everyone who voted! I will be making an indepth guide and running sessions about building your own OS, from scratch, for free! If you have any questions, comments, criticisms, or just want to say hi, my Slack is "@vote cOS for showcase"**
@@ -24,7 +26,48 @@ Currently there are only a few mainstream operating systems: Microsoft Windows, 
 
 The mainstream operating systems mentioned in the previous section are extremely complex with millions of lines of code and have fixed designs for the sake of backwards compatibility. As a result, these operating systems are not used to teach undergraduate courses. Instead, there are operating systems written to be used in an educational context, such as MINIX and xv6. However, they do not support modern hardware and are often no longer maintained.
 
-This project aims to investigate the process of creating an operating system that supports modern hardware to help me understand more about computer architectures and operating systems, by building an OS **completely from scratch**. Other beneficiaries of this project would be university students as they can learn about the mechanisms used by modern operating systems that are not utilised in older educational operating systems. I believe **this is the first time such an operating system with networking capabilities has been built in C++**. 
+This project aims to investigate the process of creating an operating system that supports modern hardware to help me understand more about computer architectures and operating systems. Other beneficiaries of this project would be university students as they can learn about the mechanisms used by modern operating systems that are not utilised in older educational operating systems. I believe **this is the first time such an operating system with networking capabilities has been built in C++**. 
+
+## Command List
+
+Below is a command list, of CLI commands (not including the custom scripting language commands from cScript)
+
+<p align="center">
+<img width="700" alt="Command List" src="https://cloud-n0m9zy5rs-hack-club-bot.vercel.app/0screenshot_2024-09-02_at_11.23.37.png" alt="Command List">
+</p>
+
+### Generic
+
+`say (string)` - print out whatever arguments were passed.
+
+`help` - list common commands and keyboard shortcuts.
+
+`clear` - clear text from screen.
+
+`random (anything)` - execute random command with given args.
+
+### System
+
+`delay (int)` - use the PIT timer to delay the system by (int) number of milliseconds.
+
+`beep (int)` - use the pc speaker to beep at (int) frequency.
+
+`rmem (int)` - read value from (int) memory address.
+
+`wmem (int) (int)` - write 2nd (int) value to 1st (int) memory address.
+
+`rdisk (int) (int)` - read from 1st (int) sector number for 2nd (int) number of bytes.
+
+`wdisk (int) (string)` - write (string) data to (int) sector.
+
+
+### Filesystem
+
+`files` - list all known files and number of files currently allocated.
+
+`size (file)` - print out size of (file) in bytes.
+
+`delete (file)` - deletes and removes (file) from filesystem.
 
 ## Project Specification
 
