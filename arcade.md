@@ -1,10 +1,12 @@
 ![](https://cloud-fsj4zugvj-hack-club-bot.vercel.app/0screenshot_2024-08-20_at_10.40.10.png)
 
-TLDR: An operating system, built **completely from scratch**, with networking capabilities, the first time this has been done for C++. To be used in universities for teaching networking at the kernel level to undergraduates. Includes a custom scripting language (cScript), and graphics which allow for a GUI (just needs to be pushed), and to come is multiprocessor support using SMP.
+TLDR: An operating system, built **completely from scratch**, with **networking capabilities**, the **first time this has been done** for C++. To be used in universities for teaching networking at the kernel level to undergraduates. Includes a custom scripting language (cScript), and graphics which allow for a GUI (just needs to be pushed), and to come is multiprocessor support using SMP.
 
 Read [the main README](https://github.com/zaaahir/cos/README.md) for more details on technicals and specifics, this is just a brief overview!
 
-**Made it to Showcase round 4 (!!), thank you to everyone who voted! I will be making an indepth guide and running sessions about building your own OS, from scratch, for free! If you have any questions, comments, criticisms, or just want to say hi, my Slack is "@vote cOS for showcase"**
+‼️ **Made it to Showcase finals, thank you to everyone who voted! I will be making an indepth guide and running sessions about building your own OS, from scratch, for free! If you have any questions, comments, criticisms, or just want to say hi, my Slack is "@vote cOS for showcase".** ‼️
+
+‼️ **NEW FEATURES: cScript and C-, a custom scripting and programming language, built from scratch. A GUI, with several applications including a text editor and basic games! To come is multiprocessor support. I have previously built a computer from scratch using breadboards and am modifying the design for it to be able to run cOS. Stay tuned!** ‼️
 
 Installation can be done using the Dockerfile. You will need QEMU (the emulator I used) for running locally!
 
