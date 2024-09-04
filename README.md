@@ -1,5 +1,7 @@
 # cOS - A Modern Operating System
 
+Winner of the 2023 Hack Club Arcade Showcase, out of 2000 projects. 
+
 ## Background
 
 I have recently started taking an interest in the low-level implementation details of operating systems for computers. The operating system is system software that manages the computer system and provides services to programs. It consists of a kernel that has full control of the computer system and other loadable modules such as a networking layer.
