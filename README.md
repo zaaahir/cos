@@ -1,6 +1,6 @@
 # cOS - A Modern Operating System
 
-Winner of the 2023 Hack Club Arcade Showcase, out of 2000 projects. 
+Winner of the 2023 Hack Club Arcade Showcase, out of over 2000 projects. 
 
 ## Background
 
