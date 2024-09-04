@@ -10,6 +10,10 @@ Read [the main README](https://github.com/zaaahir/cos/README.md) for more detail
 
 Installation can be done using the Dockerfile. You will need QEMU (the emulator I used) for running locally!
 
+## Why should you vote/care?
+
+Universities usually use old operating systems written to be used in an educational context, such as MINIX and xv6. However, they do not support modern hardware and are often no longer maintained, as well as being written in plain C. This doesn't align with univerisities programming classes, which are usually taught in a more readable C++, with comments and a focus on legible code. This is what the project grew out from, but now it's much larger than that. I'm writing a guide for others to follow the footsteps and write their own OSes, from scratch, with 200 pages of the guide already written (Interested? DM me on Slack). This may also be part of an upcoming YSWS (You Ship We Ship), where you get a physical prize for creating your own OS! 
+
 ## Background
 
 I have recently started taking an interest in the low-level implementation details of operating systems for computers. The operating system is system software that manages the computer system and provides services to programs. It consists of a kernel that has full control of the computer system and other loadable modules such as a networking layer.
