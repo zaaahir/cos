@@ -1,6 +1,6 @@
 ![](https://cloud-fsj4zugvj-hack-club-bot.vercel.app/0screenshot_2024-08-20_at_10.40.10.png)
 
-TLDR: An operating system, built **completely from scratch**, with **networking capabilities**, the **first time this has been done** for C++. To be used in universities for teaching networking at the kernel level to undergraduates. Includes a custom scripting language (cScript), and graphics which allow for a GUI (just needs to be pushed), and to come is multiprocessor support using SMP.
+TLDR: An operating system, built **completely from scratch** (over 35,000 lines of code), with **networking capabilities**, the **first time this has been done** for C++. To be used in universities for teaching networking at the kernel level to undergraduates. Includes a custom scripting language (cScript), and graphics which allow for a GUI (just needs to be pushed), and to come is multiprocessor support using SMP.
 
 Read [the main README](https://github.com/zaaahir/cos/README.md) for more details on technicals and specifics, this is just a brief overview!
 
