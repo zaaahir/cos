@@ -2,6 +2,8 @@
 
 Winner of the 2024 Hack Club Arcade Showcase, out of over 2000 projects. 
 
+**NEW:** cOS is adding a custom bootloader, a GUI (with several applications including games and a text editor, with syntax highlighting), and two custom programming languages, cScript, a scripting language, and C-, a high performance programming language. To come is multiprocessor support through SMP and more advanced graphics processing.
+
 ## Background
 
 I have recently started taking an interest in the low-level implementation details of operating systems for computers. The operating system is system software that manages the computer system and provides services to programs. It consists of a kernel that has full control of the computer system and other loadable modules such as a networking layer.
