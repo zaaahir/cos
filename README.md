@@ -1,8 +1,8 @@
 # cOS - A Modern Operating System
 
-Winner of the 2024 Hack Club Arcade Showcase, out of over 2000 projects. 
+Winner of the Hack Club Arcade Showcase 2024, out of over 2000 projects. 
 
-**NEW:** cOS is adding a custom bootloader, a GUI (with several applications including games and a text editor, with syntax highlighting), and two custom programming languages, cScript, a scripting language, and C-, a high performance programming language. To come is multiprocessor support through SMP and more advanced graphics processing.
+Winner of RakHack 2024.
 
 ## Background
 
