@@ -22,14 +22,14 @@ Currently there are only a few mainstream operating systems: Microsoft Windows, 
 
 ## Project Outline
 
-The mainstream operating systems mentioned in the previous section are extremely complex with millions of lines of code and have fixed designs for the sake of backwards compatibility. As a result, these operating systems are not used to teach undergraduate courses. Instead, there are operating systems written to be used in an educational context, such as MINIX and xv6. However, they do not support modern hardware and are often no longer maintained.
-This project aims to investigate the process of creating an operating system that supports modern hardware to help me understand more about computer architectures and operating systems. Other beneficiaries of this project would be university students as they can learn about the mechanisms used by modern operating systems that are not utilised in older educational operating systems.
+Mainstream operating systems contain millions of lines of code and retain design constraints for backwards compatibility, which makes them difficult to study as complete systems. Teaching systems such as MINIX and xv6 deliberately use a smaller scope. cOS explores a different point in that design space by implementing an x86-64 kernel, user-space processes, a virtual filesystem and a TCP/IP stack in one project.
+The project began as a way to understand computer architecture and operating-system implementation. It also provides students with a worked example of how paging, interrupts, scheduling, system calls, filesystems and networking fit together.
 
 ## Project Specification
 
-These are checkboxes, but I will probably only review these guidlines at the end to check them off, rather than iteratively during the project. These are mostly for my own reference. 
+These are checkboxes, but I will probably only review these guidelines at the end to check them off, rather than iteratively during the project. These are mostly for my own reference.
 
-_Edit: Quoted items are my evalutation on this completed checklist, and a link to evidence._
+_Edit: Quoted items are my evaluation of this completed checklist, with links to evidence._
 
 ### cOS Kernel
 
@@ -57,7 +57,7 @@ _Edit: Quoted items are my evalutation on this completed checklist, and a link t
   - [x] - A Task State Segment (TSS)
   - [x] - An Interrupt Descriptor Table (IDT)
 
-    > The Global Descriptor Table and Task State Segment are both managed and set up by the kernel. The Global Descriptor Table contains entries for different protection levels; ring 0 and ring 3. This helps protect the operating system from malicious or buggy user-space programs. Ring 1 and 2 could possibly be used for device drivers as to allow less protection than user-space but more protection than running at kernel level. These have been checked by tests 1.4 and 1.6. 
+    > The Global Descriptor Table and Task State Segment are both managed and set up by the kernel. The Global Descriptor Table contains entries for different protection levels: ring 0 and ring 3. This helps protect the operating system from malicious or buggy user-space programs. Ring 1 and 2 could possibly be used for device drivers to provide less protection than user-space while retaining more protection than kernel-level execution. These have been checked by tests 1.4 and 1.6.
 - [x] - The kernel enters long mode.
 
 > The kernel jumps to a higher half 64-bit address which is where 64-bit code begins execution.
@@ -70,7 +70,7 @@ _Edit: Quoted items are my evalutation on this completed checklist, and a link t
 - [x] - The initrd is a Unix Standard TAR file.
 - [x] - The kernel initialises interrupts.
 
-> The Interrupt Descriptor Table is set up to call a custom interrupt handler, as verified in test 1.6. This uses virtual functions to find a relevant interrupt handler and call it. As a result, device drivers can easily handle interrupts by inheriting from the interrupt handler class. The Programmable Interrupt Controller (PIC) has also been set up as verified in test 1.7, and hardware interrupts are received in test 1.8. In the future, the Advanced Programmable Interrupt Controller (APIC) could be used to allow for multi-processor interrupt routing.
+> The Interrupt Descriptor Table is set up to call a custom interrupt handler, as verified in test 1.6. This uses virtual functions to find a relevant interrupt handler and call it. As a result, device drivers can easily handle interrupts by inheriting from the interrupt handler class. The Programmable Interrupt Controller (PIC) has also been set up as verified in test 1.7, and hardware interrupts are received in test 1.8. In the future, the Advanced Programmable Interrupt Controller (APIC) could support multiprocessor interrupt routing.
 
 - [x] - The kernel initialises the Programmable Interval Timer (PIT).
 
@@ -132,7 +132,7 @@ _Edit: Quoted items are my evalutation on this completed checklist, and a link t
 
 My project will be to create an operating system (cOS) that runs on modern hardware and is able to run user-space programs. The project will consist of the following sections:
 
-- The core kernel that is responsible for initialising and managing the processor; handing hardware operations and memory; executing and switching between processes; and providing services to processes.
+- The core kernel that is responsible for initialising and managing the processor, handling hardware operations and memory, executing and switching between processes, and providing services to processes.
 - The filesystem layer that is responsible for providing a virtual filesystem interface for processes to access files in a concrete filesystem agnostic manner.
 - The networking layer that is responsible for managing network operations and sockets by interfacing with the network card driver and managing various networking protocol stacks.
 - The user-space in which most user programs execute with C Library support. This is separated from the kernel using the protection mechanisms provided by the processor.
@@ -143,7 +143,7 @@ The instruction set architecture which generally defines how software controls t
 
 ### Cross Compilation
 
-The default system compilers make assumptions about the host machine (the machine that the program will run on), such as whether it has support for dynamic loading and whether it is freestanding. As a result, we must compile our own cross- compiler.
+The default system compilers make assumptions about the host machine (the machine that the program will run on), such as whether it has support for dynamic loading and whether it is freestanding. As a result, we must compile our own cross-compiler.
 A cross-compiler is a compiler where the host machine (machine that the binaries will execute on) is different from the build machine (machine that compiles the binaries). Our host machine will be running cOS, however we do not have a compiler to build cOS! We make a generic cross-compiler that targets a generic x86-64 machine with no operating system in order to build our operating system. We use `gcc` as our compiler, and our host machine is `x86-64-elf` (we can eventually create our own toolchain and our host machine will be `x86-64-cos`). We will also build this using a Docker container, as this allows our build process to be easily reproducible by anyone. A deep dive into the build process is beyond the scope of this documentation.
 
 ### Hierarchy Charts
@@ -864,7 +864,7 @@ To test networking, I will use QEMU’s command line to save a dump of network c
 
 
 <p align="center">
-<img width="700" alt="Screenshot 2024-08-19 at 11 31 53" src="https://github.com/user-attachments/assets/98eafbec-c08a-42fc-b2cf-54b47a729fd5" alt="Screenshot of QEMU as evidence for test 1.1.">
+<img width="700" src="https://github.com/user-attachments/assets/98eafbec-c08a-42fc-b2cf-54b47a729fd5" alt="Screenshot of QEMU as evidence for test 1.1.">
 </p>
 
 <p align="center">
@@ -873,7 +873,7 @@ To test networking, I will use QEMU’s command line to save a dump of network c
 
 
 <p align="center">
-<img width="700" alt="Screenshot 2024-08-19 at 11 31 53" src="https://github.com/user-attachments/assets/23894dce-de67-4ba2-8c36-2f49cbf94c09" alt="Screenshot of memory map as evidence for test 1.2. ">
+<img width="700" src="https://github.com/user-attachments/assets/23894dce-de67-4ba2-8c36-2f49cbf94c09" alt="Screenshot of memory map as evidence for test 1.2. ">
 </p>
 
 <p align="center">
@@ -882,7 +882,7 @@ To test networking, I will use QEMU’s command line to save a dump of network c
 
 
 <p align="center">
-<img width="700" alt="Screenshot 2024-08-19 at 11 31 53" src="https://github.com/user-attachments/assets/984673a3-0c72-43d6-8c27-5127d9243fad" alt="Screenshot of accessing the virtual address of the physical address 0x1000 as evidence for test 1.3.  ">
+<img width="700" src="https://github.com/user-attachments/assets/984673a3-0c72-43d6-8c27-5127d9243fad" alt="Screenshot of accessing the virtual address of the physical address 0x1000 as evidence for test 1.3.  ">
 </p>
 
 <p align="center">
@@ -890,7 +890,7 @@ To test networking, I will use QEMU’s command line to save a dump of network c
 </p>
 
 <p align="center">
-<img width="700" alt="Screenshot 2024-08-19 at 11 31 53" src="https://github.com/user-attachments/assets/2f492813-2529-4c13-b568-9be97022c0f2" alt="Screenshot of contents of 0x1000 from QEMU monitor as evidence for test 1.3. The xp command returns the content of a physical address. ">
+<img width="700" src="https://github.com/user-attachments/assets/2f492813-2529-4c13-b568-9be97022c0f2" alt="Screenshot of contents of 0x1000 from QEMU monitor as evidence for test 1.3. The xp command returns the content of a physical address. ">
 </p>
 
 <p align="center">
@@ -909,7 +909,7 @@ printf(*(uint8_t*)Memory::VirtualAddress(Memory::PhysicalAddress(0x1000)).get())
 
 
 <p align="center">
-<img width="700" alt="Screenshot 2024-08-19 at 11 31 53" src="https://github.com/user-attachments/assets/6a70237d-47e8-4b17-af30-615f6263ecce" alt="Screenshot of registers from QEMU monitor for test 1.4.">
+<img width="700" src="https://github.com/user-attachments/assets/6a70237d-47e8-4b17-af30-615f6263ecce" alt="Screenshot of registers from QEMU monitor for test 1.4.">
 </p>
 
 <p align="center">
@@ -919,7 +919,7 @@ printf(*(uint8_t*)Memory::VirtualAddress(Memory::PhysicalAddress(0x1000)).get())
 
 
 <p align="center">
-<img width="700" alt="Screenshot 2024-08-19 at 11 31 53" src="https://github.com/user-attachments/assets/d3882b68-49e6-4f2c-847e-be064ef49e95" alt="Screenshot of page fault before allocating page for test 1.5. ">
+<img width="700" src="https://github.com/user-attachments/assets/d3882b68-49e6-4f2c-847e-be064ef49e95" alt="Screenshot of page fault before allocating page for test 1.5. ">
 </p>
 
 <p align="center">
@@ -937,7 +937,7 @@ printf(*(uint8_t*)0x1000);
 </p>
 
 <p align="center">
-<img width="700" alt="Screenshot 2024-08-19 at 11 31 53" src="https://github.com/user-attachments/assets/7de8f9a5-a2fd-4940-9754-4a372d56f218" alt="Screenshot of no page fault occurring after allocating page for test 1.5. ">
+<img width="700" src="https://github.com/user-attachments/assets/7de8f9a5-a2fd-4940-9754-4a372d56f218" alt="Screenshot of no page fault occurring after allocating page for test 1.5. ">
 </p>
 
 <p align="center">
@@ -959,7 +959,7 @@ printf(*(uint8_t*)0x1000);
 
 
 <p align="center">
-<img width="700" alt="Screenshot 2024-08-19 at 11 31 53" src="https://github.com/user-attachments/assets/059f4333-a3cd-4d7b-b245-9c6334ef49d6" alt="Screenshot of registers from QEMU monitor for test 1.6. ">
+<img width="700" src="https://github.com/user-attachments/assets/059f4333-a3cd-4d7b-b245-9c6334ef49d6" alt="Screenshot of registers from QEMU monitor for test 1.6. ">
 </p>
 
 <p align="center">
@@ -967,7 +967,7 @@ printf(*(uint8_t*)0x1000);
 </p>
 
 <p align="center">
-<img width="700" alt="Screenshot 2024-08-19 at 11 31 53" src="https://github.com/user-attachments/assets/7eb78dc9-7c18-4b8c-841a-872670906350" alt="Screenshot of PIC offsets from QEMU monitor for test 1.7. ">
+<img width="700" src="https://github.com/user-attachments/assets/7eb78dc9-7c18-4b8c-841a-872670906350" alt="Screenshot of PIC offsets from QEMU monitor for test 1.7. ">
 </p>
 
 <p align="center">
@@ -975,7 +975,7 @@ printf(*(uint8_t*)0x1000);
 </p>
 
 <p align="center">
-<img width="700" alt="Screenshot 2024-08-19 at 11 31 53" src="https://github.com/user-attachments/assets/bce971e4-4cb1-413d-a000-0c518180b04e" alt="Screenshot of keyboard scan-codes being printed for test 1.8. ">
+<img width="700" src="https://github.com/user-attachments/assets/bce971e4-4cb1-413d-a000-0c518180b04e" alt="Screenshot of keyboard scan-codes being printed for test 1.8. ">
 </p>
 
 <p align="center">
@@ -983,7 +983,7 @@ printf(*(uint8_t*)0x1000);
 </p>
 
 <p align="center">
-<img width="700" alt="Screenshot 2024-08-19 at 11 31 53" src="https://github.com/user-attachments/assets/31b17980-67a7-4fd0-9497-21083b20287e" alt="Screenshot of page fault occurring by accessing address 4321 for test 1.9. ">
+<img width="700" src="https://github.com/user-attachments/assets/31b17980-67a7-4fd0-9497-21083b20287e" alt="Screenshot of page fault occurring by accessing address 4321 for test 1.9. ">
 </p>
 
 <p align="center">
@@ -999,7 +999,7 @@ printf(*(uint8_t*) 4321);
 </p>
 
 <p align="center">
-<img width="700" alt="Screenshot 2024-08-19 at 11 31 53" src="https://github.com/user-attachments/assets/1cb1efb0-e675-4b76-a5a3-98efb4a4684e" alt="Screenshot of allocation not being overwritten for test 2.1. ">
+<img width="700" src="https://github.com/user-attachments/assets/1cb1efb0-e675-4b76-a5a3-98efb4a4684e" alt="Screenshot of allocation not being overwritten for test 2.1. ">
 </p>
 
 <p align="center">
@@ -1034,7 +1034,7 @@ printf(*(uint8_t*) 4321);
 </p>
 
 <p align="center">
-<img width="700" alt="Screenshot 2024-08-19 at 11 31 53" src="https://github.com/user-attachments/assets/084133b8-c96b-44ab-b723-2051b108256e" alt="Screenshot of kernel not crashing for test 2.2.">
+<img width="700" src="https://github.com/user-attachments/assets/084133b8-c96b-44ab-b723-2051b108256e" alt="Screenshot of kernel not crashing for test 2.2.">
 </p>
 
 <p align="center">
@@ -1051,7 +1051,7 @@ auto allocation = kmalloc(8192, 0);
 </p>
 
 <p align="center">
-<img width="700" alt="Screenshot 2024-08-19 at 11 31 53" src="https://github.com/user-attachments/assets/2b5a3e14-43cd-4dff-a08a-1c2e1b238525" alt="Screenshot of detected PCI devices for test 2.3.">
+<img width="700" src="https://github.com/user-attachments/assets/2b5a3e14-43cd-4dff-a08a-1c2e1b238525" alt="Screenshot of detected PCI devices for test 2.3.">
 </p>
 
 <p align="center">
@@ -1060,7 +1060,7 @@ auto allocation = kmalloc(8192, 0);
 
 
 <p align="center">
-<img width="700" alt="Screenshot 2024-08-19 at 11 31 53" src="https://github.com/user-attachments/assets/98a1f750-cd2a-4ad8-9758-79f9c621f058" alt="Screenshot of QEMU monitor dump of emulated PCI devices for test 2.3.">
+<img width="700" src="https://github.com/user-attachments/assets/98a1f750-cd2a-4ad8-9758-79f9c621f058" alt="Screenshot of QEMU monitor dump of emulated PCI devices for test 2.3.">
 </p>
 
 <p align="center">
@@ -1068,7 +1068,7 @@ auto allocation = kmalloc(8192, 0);
 </p>
 
 <p align="center">
-<img width="700" alt="Screenshot 2024-08-19 at 11 31 53" src="https://github.com/user-attachments/assets/e46ea115-b1e4-4836-b583-330056a5a52a" alt="Screenshot of reading initrd/afile.txt for test 2.4. ">
+<img width="700" src="https://github.com/user-attachments/assets/e46ea115-b1e4-4836-b583-330056a5a52a" alt="Screenshot of reading initrd/afile.txt for test 2.4. ">
 </p>
 
 <p align="center">
@@ -1101,7 +1101,7 @@ auto file = Filesystem::VirtualFilesystemManager::instance().open_file("initrd/a
 </p>
 
 <p align="center">
-<img width="700" alt="Screenshot 2024-08-19 at 11 31 53" src="https://github.com/user-attachments/assets/f997d6f1-cad0-42c3-8964-2339f0aec419" alt="Screenshot of reading initrd/dir/afile.txt for test 2.5. ">
+<img width="700" src="https://github.com/user-attachments/assets/f997d6f1-cad0-42c3-8964-2339f0aec419" alt="Screenshot of reading initrd/dir/afile.txt for test 2.5. ">
 </p>
 
 <p align="center">
@@ -1126,7 +1126,7 @@ auto file = Filesystem::VirtualFilesystemManager::instance().open_file("initrd/d
 </p>
 
 <p align="center">
-<img width="700" alt="Screenshot 2024-08-19 at 11 31 53" src="https://github.com/user-attachments/assets/645b46f7-1825-4122-85c1-7f3e446a97c4" alt="Screenshot of receiving keyboard events for test 2.6.  ">
+<img width="700" src="https://github.com/user-attachments/assets/645b46f7-1825-4122-85c1-7f3e446a97c4" alt="Screenshot of receiving keyboard events for test 2.6.  ">
 </p>
 
 <p align="center">
@@ -1150,12 +1150,11 @@ auto eventDescriptor = Events::EventDispatcher::instance().register_event_listen
 </p>
 
 <p align="center">
-<img width="700" alt="Screenshot 2024-08-19 at 11 31 53" src="https://github.com/user-attachments/assets/8fab77fc-8925-4b53-81fe-694225cf5c79" alt="Screenshot of Wireshark showing “Hello network!”
-  transmitted on the network for test 3.1. ">
+<img width="700" src="https://github.com/user-attachments/assets/8fab77fc-8925-4b53-81fe-694225cf5c79" alt="Wireshark capture showing &quot;Hello network!&quot; transmitted for test 3.1.">
 </p>
 
 <p align="center">
-<i>Screenshot of Wireshark showing “Hello network!”<br>
+<i>Screenshot of Wireshark showing "Hello network!"<br>
   transmitted on the network for test 3.1.  </i>
 </p>
 
@@ -1170,12 +1169,12 @@ AMDPCNETIIIDriver.send_data((uint8_t*)"Hello network!", 14);
 
 
 <p align="center">
-<img width="700" alt="Screenshot 2024-08-19 at 11 31 53" src="https://github.com/user-attachments/assets/02d872e4-1a05-4dd2-94fb-4574baaa0e40" alt="Screenshot of Wireshark showing a compliant Ethernet II frame with the payload “Hello network!” transmitted on the network for test 3.2. ">
+<img width="700" src="https://github.com/user-attachments/assets/02d872e4-1a05-4dd2-94fb-4574baaa0e40" alt="Wireshark capture showing a compliant Ethernet II frame with the payload &quot;Hello network!&quot; for test 3.2.">
 </p>
 
 <p align="center">
 <i>Screenshot of Wireshark showing a compliant Ethernet II frame with the payload<br>
-  “Hello network!” transmitted on the network for test 3.2.  </i>
+  "Hello network!" transmitted on the network for test 3.2.  </i>
 </p>
 
 ```cpp
@@ -1188,7 +1187,7 @@ Networking::Ethernet::EthernetLayerManager::instance()->send_data(0xFFFFFFFFFFFF
 </p>
 
 <p align="center">
-<img width="700" alt="Screenshot 2024-08-19 at 11 31 53" src="https://github.com/user-attachments/assets/24bf0d47-d064-4cb9-bcab-c5b938c2b785" alt="Screenshot of getting the MAC address for the gateway IP 10.0.0.2 for test 3.3. ">
+<img width="700" src="https://github.com/user-attachments/assets/24bf0d47-d064-4cb9-bcab-c5b938c2b785" alt="Screenshot of getting the MAC address for the gateway IP 10.0.0.2 for test 3.3. ">
 </p>
 
 <p align="center">
@@ -1196,7 +1195,7 @@ Networking::Ethernet::EthernetLayerManager::instance()->send_data(0xFFFFFFFFFFFF
 </p>
 
 <p align="center">
-<img width="700" alt="Screenshot 2024-08-19 at 11 31 53" src="https://github.com/user-attachments/assets/cca26e6b-2b9e-4574-a27a-7cb5523f7729" alt="Screenshot of Wireshark showing compliant ARP request sent by the kernel and a response which is processed and cached for test 3.3. ">
+<img width="700" src="https://github.com/user-attachments/assets/cca26e6b-2b9e-4574-a27a-7cb5523f7729" alt="Screenshot of Wireshark showing compliant ARP request sent by the kernel and a response which is processed and cached for test 3.3. ">
 </p>
 
 <p align="center">
@@ -1239,7 +1238,7 @@ printf(MACAddress);
 </p>
 
 <p align="center">
-<img width="700" alt="Screenshot 2024-08-19 at 11 31 53" src="https://github.com/user-attachments/assets/202c7728-3db9-4442-85e1-644a2df6c729" alt="Screenshot of Wireshark showing a compliant IPv4 packet transmitted (other than protocol type) for test 3.4.  ">
+<img width="700" src="https://github.com/user-attachments/assets/202c7728-3db9-4442-85e1-644a2df6c729" alt="Screenshot of Wireshark showing a compliant IPv4 packet transmitted (other than protocol type) for test 3.4.  ">
 </p>
 
 <p align="center">
@@ -1265,7 +1264,7 @@ Networking::InternetProtocolV4::InternetProtocolManager::instance()->send_data(g
 </p>
 
 <p align="center">
-<img width="700" alt="Screenshot 2024-08-19 at 11 31 53" src="https://github.com/user-attachments/assets/f879e58e-9435-4406-81fd-49dc1b4bb040" alt="Screenshot of Wireshark showing a compliant UDP packet transmitted for test 3.5. ">
+<img width="700" src="https://github.com/user-attachments/assets/f879e58e-9435-4406-81fd-49dc1b4bb040" alt="Screenshot of Wireshark showing a compliant UDP packet transmitted for test 3.5. ">
 </p>
 
 <p align="center">
@@ -1293,7 +1292,7 @@ udpManager->send(socket, (uint8_t*)"Hello network!", 14);
 </p>
 
 <p align="center">
-<img width="700" alt="Screenshot 2024-08-19 at 11 31 53" src="https://github.com/user-attachments/assets/9f44d1dc-637e-472b-b34e-bd58f7de7bb2" alt="Screenshot of Wireshark showing a compliant UDP packet being received for test 3.6.  ">
+<img width="700" src="https://github.com/user-attachments/assets/9f44d1dc-637e-472b-b34e-bd58f7de7bb2" alt="Screenshot of Wireshark showing a compliant UDP packet being received for test 3.6.  ">
 </p>
 
 <p align="center">
@@ -1309,7 +1308,7 @@ auto socket = udpManager->listen(1234);
 </p>
 
 <p align="center">
-<img width="700" alt="Screenshot 2024-08-19 at 11 31 53" src="https://github.com/user-attachments/assets/1f135782-8240-481f-9c64-46beee7b9322" alt="Screenshot of Wireshark showing a compliant TCP connection when connecting to a remote endpoint for test 3.7. ">
+<img width="700" src="https://github.com/user-attachments/assets/1f135782-8240-481f-9c64-46beee7b9322" alt="Screenshot of Wireshark showing a compliant TCP connection when connecting to a remote endpoint for test 3.7. ">
 </p>
 
 <p align="center">
@@ -1340,7 +1339,7 @@ socket->send((uint8_t*)"Hello network!", 14);
 </p>
 
 <p align="center">
-<img width="700" alt="Screenshot 2024-08-19 at 11 31 53" src="https://github.com/user-attachments/assets/48a71b0a-bf22-4c53-8be1-78b9584c015d" alt="Screenshot of Wireshark showing a compliant HTTP POST request sent for test 3.8.  ">
+<img width="700" src="https://github.com/user-attachments/assets/48a71b0a-bf22-4c53-8be1-78b9584c015d" alt="Screenshot of Wireshark showing a compliant HTTP POST request sent for test 3.8.  ">
 </p>
 
 <p align="center">
@@ -1370,7 +1369,7 @@ socket-> send((uint8_t*)"POST /d493159e-39a2-4015-a5b7-cfcc05a9d739 HTTP/1.1\nHo
 </p>
 
 <p align="center">
-<img width="700" alt="Screenshot 2024-08-19 at 11 31 53" src="https://github.com/user-attachments/assets/56bc1af3-c8ec-44fa-b9c0-6c4279c1222d" alt="Screenshot of kernel running multiple tasks for test 4.1.">
+<img width="700" src="https://github.com/user-attachments/assets/56bc1af3-c8ec-44fa-b9c0-6c4279c1222d" alt="Screenshot of kernel running multiple tasks for test 4.1.">
 </p>
 
 <p align="center">
@@ -1423,7 +1422,7 @@ Task::TaskManager::instance().run();
 </p>
 
 <p align="center">
-<img width="700" alt="Screenshot 2024-08-19 at 11 31 53" src="https://github.com/user-attachments/assets/42d2914d-a414-4afa-888b-2989269b3330" alt="Screenshot of kernel running different priority tasks for test 4.2. ">
+<img width="700" src="https://github.com/user-attachments/assets/42d2914d-a414-4afa-888b-2989269b3330" alt="Screenshot of kernel running different priority tasks for test 4.2. ">
 </p>
 
 <p align="center">
@@ -1479,7 +1478,7 @@ Task::TaskManager::instance().run();
 </p>
 
 <p align="center">
-<img width="700" alt="Screenshot 2024-08-19 at 11 31 53" src="https://github.com/user-attachments/assets/1fbbbaa7-9b65-4476-b18a-7440c4d92a81" alt="Screenshot of kernel receiving keyboard interrupts as all tasks block for test 4.3. ">
+<img width="700" src="https://github.com/user-attachments/assets/1fbbbaa7-9b65-4476-b18a-7440c4d92a81" alt="Screenshot of kernel receiving keyboard interrupts as all tasks block for test 4.3. ">
 </p>
 
 <p align="center">
@@ -1532,7 +1531,7 @@ Task::TaskManager::instance().run();
 </p>
 
 <p align="center">
-<img width="700" alt="Screenshot 2024-08-19 at 11 31 53" src="https://github.com/user-attachments/assets/9d397584-3f93-4ae1-9c9a-e0471ce95099" alt="Screenshot of user-space program executing a system call for test 4.4. ">
+<img width="700" src="https://github.com/user-attachments/assets/9d397584-3f93-4ae1-9c9a-e0471ce95099" alt="Screenshot of user-space program executing a system call for test 4.4. ">
 </p>
 
 <p align="center">
